@@ -1,0 +1,26 @@
+{
+    "flags": {
+        "blendMode": "normal",
+        "cullMode": "off",
+        "enableDepthTest": true,
+        "writeAlpha": true,
+        "writeColor": true,
+        "writeDepth": true
+    },
+    "shader": "__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/lut_shader.dprx",
+    "uniformValues": {
+        "lutAmount": {
+            "dataType": "slider",
+            "type": "vector",
+            "value": 0.0
+        },
+        "s_texColor": {
+            "texture": "Postprocessing texture",
+            "type": "texture"
+        },
+        "s_texLut": {
+            "texture": "__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/empty_texture_color_data.png",
+            "type": "texture"
+        }
+    }
+}

@@ -1,0 +1,14 @@
+<svg width="512" height="256" viewBox="0 0 512 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dog Ears -->
+  <!-- Left Ear -->
+  <ellipse cx="128" cy="128" rx="60" ry="100" fill="#8B4513" transform="rotate(-20 128 128)"/>
+  <ellipse cx="128" cy="128" rx="40" ry="70" fill="#D2691E" transform="rotate(-20 128 128)"/>
+  
+  <!-- Right Ear -->
+  <ellipse cx="384" cy="128" rx="60" ry="100" fill="#8B4513" transform="rotate(20 384 128)"/>
+  <ellipse cx="384" cy="128" rx="40" ry="70" fill="#D2691E" transform="rotate(20 384 128)"/>
+  
+  <!-- Ear Details -->
+  <circle cx="108" cy="108" r="8" fill="#654321"/>
+  <circle cx="404" cy="108" r="8" fill="#654321"/>
+</svg>

@@ -1,0 +1,44 @@
+{
+    "flags": {
+        "blendMode": "normal",
+        "cullMode": "off",
+        "enableDepthTest": true,
+        "writeAlpha": true,
+        "writeColor": true,
+        "writeDepth": true
+    },
+    "shader": "__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/beauty_shader.dprx",
+    "uniformValues": {
+        "inputtex": {
+            "texture": "Camera texture",
+            "type": "texture"
+        },
+        "masktex": {
+            "texture": "foundationAndSmooth.png",
+            "type": "texture"
+        },
+        "smoothingAmount": {
+            "dataType": "slider",
+            "type": "vector",
+            "value": 0.0
+        },
+        "softAmount": {
+            "dataType": "slider",
+            "type": "vector",
+            "value": 0.7020000219345093
+        },
+        "softColor": {
+            "color": [
+                0.772549033164978,
+                0.5647059082984924,
+                0.3529411852359772
+            ],
+            "dataType": "color",
+            "type": "vector"
+        },
+        "softtex": {
+            "texture": "foundationAndSmooth.png",
+            "type": "texture"
+        }
+    }
+}

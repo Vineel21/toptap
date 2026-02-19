@@ -1,0 +1,19 @@
+Free Beauty Package CHANGELOG
+---------------------------------
+
+v1.3
+- Fixed the issue where some eyelashes appeared too big
+- Tested with the SDK version 5.1.0
+
+---------------------------------
+
+v1.2
+- Included the baseBeauty.deeparproj Studio project for easier editing
+
+---------------------------------
+
+v1.0 
+- Initial version
+
+---------------------------------
+

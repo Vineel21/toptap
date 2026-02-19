@@ -1,0 +1,16 @@
+{
+    "format": 300,
+    "studio": "DeepAR Studio 4.2.1.626-rel (4.2.1.626)",
+    "traits": {
+        "usesBeautyShader": true,
+        "usesEmptyTextureColorData": true,
+        "usesEyes2Mesh": true,
+        "usesEyesMesh": true,
+        "usesLipsMesh": true,
+        "usesLutShader": true,
+        "usesQuadMesh": true,
+        "usesUnlitTextureColorShader": true,
+        "usesUnlitTextureShader": true
+    },
+    "version": "4.2.1.626"
+}

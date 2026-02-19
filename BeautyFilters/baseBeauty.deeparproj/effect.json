@@ -1,0 +1,1984 @@
+{
+    "animationEnabled": true,
+    "children": [
+        {
+            "animationEnabled": true,
+            "children": [
+                {
+                    "animationEnabled": true,
+                    "components": [
+                        {
+                            "blendShapeWeightsExpanded": false,
+                            "bones": [
+                                "$ 0 1",
+                                "$ 0 1 0",
+                                "$ 0 1 1",
+                                "$ 0 1 2",
+                                "$ 0 1 3",
+                                "$ 0 1 4",
+                                "$ 0 1 5",
+                                "$ 0 1 6",
+                                "$ 0 1 7",
+                                "$ 0 1 8",
+                                "$ 0 1 9",
+                                "$ 0 1 10",
+                                "$ 0 1 11",
+                                "$ 0 1 12",
+                                "$ 0 1 13",
+                                "$ 0 1 14",
+                                "$ 0 1 15",
+                                "$ 0 1 16",
+                                "$ 0 1 17",
+                                "$ 0 1 18",
+                                "$ 0 1 19",
+                                "$ 0 1 20",
+                                "$ 0 1 21",
+                                "$ 0 1 22",
+                                "$ 0 1 23",
+                                "$ 0 1 24",
+                                "$ 0 1 25",
+                                "$ 0 1 26",
+                                "$ 0 1 27",
+                                "$ 0 1 28",
+                                "$ 0 1 29",
+                                "$ 0 1 30",
+                                "$ 0 1 31",
+                                "$ 0 1 32",
+                                "$ 0 1 33",
+                                "$ 0 1 34",
+                                "$ 0 1 35",
+                                "$ 0 1 36",
+                                "$ 0 1 37",
+                                "$ 0 1 38",
+                                "$ 0 1 39",
+                                "$ 0 1 40",
+                                "$ 0 1 41",
+                                "$ 0 1 42",
+                                "$ 0 1 43",
+                                "$ 0 1 44",
+                                "$ 0 1 45",
+                                "$ 0 1 46",
+                                "$ 0 1 47",
+                                "$ 0 1 48",
+                                "$ 0 1 49",
+                                "$ 0 1 50"
+                            ],
+                            "bonesExpanded": false,
+                            "enabled": true,
+                            "material": "~/faceMat",
+                            "mesh": "~/faceBones",
+                            "meshDriver": "bones",
+                            "open": true,
+                            "type": "meshRenderer"
+                        }
+                    ],
+                    "depth": 0,
+                    "dynamicUv": "cameraTextureUv2",
+                    "editorAnimationsOpen": false,
+                    "editorOpen": false,
+                    "editorPropertyOpen": true,
+                    "editorSelectedAnimation": "",
+                    "enabled": true,
+                    "localPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "localRotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "localScale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "name": "face_makeup",
+                    "viewId": 2
+                },
+                {
+                    "animationEnabled": true,
+                    "children": [
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": true,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j17",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j15",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j9",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j1",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j3",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j5",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j13",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j11",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j7",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j20",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j25",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j49",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j55",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j68",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j66",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j65",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j61",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j60",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j59",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j58",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j57",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j56",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j54",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j53",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j51",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j50",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j48",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j47",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j46",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j45",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j44",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j43",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j42",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j41",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j40",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j39",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j38",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j37",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j27",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j26",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j24",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j23",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j22",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j21",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j19",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j18",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j67",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j64",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j63",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j62",
+                            "viewId": 2
+                        },
+                        {
+                            "animationEnabled": true,
+                            "depth": 0,
+                            "dynamicUv": "disabled",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localEulerAngles": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "j52",
+                            "viewId": 2
+                        }
+                    ],
+                    "depth": 0,
+                    "dynamicUv": "disabled",
+                    "editorAnimationsOpen": false,
+                    "editorOpen": false,
+                    "editorPropertyOpen": true,
+                    "editorSelectedAnimation": "",
+                    "enabled": true,
+                    "localEulerAngles": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "localPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "localScale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "name": "root",
+                    "viewId": 2
+                }
+            ],
+            "components": [
+                {
+                    "enableThresholdX": false,
+                    "enableThresholdY": false,
+                    "enableThresholdZ": false,
+                    "enabled": true,
+                    "faceId": -1,
+                    "ignoreRotationX": false,
+                    "ignoreRotationY": false,
+                    "ignoreRotationZ": false,
+                    "ignoreTranslationX": false,
+                    "ignoreTranslationY": false,
+                    "ignoreTranslationZ": false,
+                    "open": true,
+                    "thresholdTranslationX": 0.0,
+                    "thresholdTranslationY": 0.0,
+                    "thresholdTranslationZ": 0.0,
+                    "type": "facePosition"
+                }
+            ],
+            "depth": 0,
+            "dynamicUv": "disabled",
+            "editorAnimationsOpen": false,
+            "editorOpen": true,
+            "editorPropertyOpen": true,
+            "editorSelectedAnimation": "",
+            "enabled": true,
+            "localPosition": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "localRotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "localScale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "name": "face_makeup_container",
+            "viewId": 2
+        },
+        {
+            "animationEnabled": true,
+            "animations": {
+                "Take 001": {
+                    "duration": 4958.0,
+                    "layers": [
+                        {
+                            "name": ""
+                        }
+                    ],
+                    "timeInSeconds": 0.0
+                }
+            },
+            "children": [
+                {
+                    "animationEnabled": true,
+                    "children": [
+                        {
+                            "animationEnabled": true,
+                            "components": [
+                                {
+                                    "blendShapeWeightsExpanded": false,
+                                    "bonesExpanded": false,
+                                    "enabled": true,
+                                    "material": "~/LipMat",
+                                    "mesh": "~/__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/lips_mesh.armesh",
+                                    "meshDriver": "vertices2DLips",
+                                    "open": true,
+                                    "type": "meshRenderer"
+                                }
+                            ],
+                            "depth": 0,
+                            "dynamicUv": "cameraTextureUv2",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localRotation": [
+                                -0.0,
+                                -0.0,
+                                -0.0,
+                                1.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "lips",
+                            "viewId": 3
+                        }
+                    ],
+                    "depth": 0,
+                    "dynamicUv": "disabled",
+                    "editorAnimationsOpen": false,
+                    "editorOpen": true,
+                    "editorPropertyOpen": true,
+                    "editorSelectedAnimation": "",
+                    "enabled": true,
+                    "localPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "localRotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "localScale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "name": "group",
+                    "viewId": 2
+                }
+            ],
+            "depth": 0,
+            "dynamicUv": "disabled",
+            "editorAnimationsOpen": false,
+            "editorOpen": true,
+            "editorPropertyOpen": true,
+            "editorSelectedAnimation": "",
+            "enabled": true,
+            "localPosition": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "localRotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "localScale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "name": "base_lips",
+            "viewId": 2
+        },
+        {
+            "animationEnabled": true,
+            "children": [
+                {
+                    "animationEnabled": true,
+                    "children": [
+                        {
+                            "animationEnabled": true,
+                            "components": [
+                                {
+                                    "blendShapeWeightsExpanded": false,
+                                    "bonesExpanded": false,
+                                    "enabled": true,
+                                    "material": "~/eyelinerMat",
+                                    "mesh": "~/__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/eyes_mesh.armesh",
+                                    "meshDriver": "vertices2DEyes",
+                                    "open": true,
+                                    "type": "meshRenderer"
+                                }
+                            ],
+                            "depth": 0,
+                            "dynamicUv": "cameraTextureUv2",
+                            "editorAnimationsOpen": false,
+                            "editorOpen": false,
+                            "editorPropertyOpen": true,
+                            "editorSelectedAnimation": "",
+                            "enabled": true,
+                            "localPosition": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "localRotation": [
+                                1.3234889800848443e-23,
+                                0.0,
+                                0.0,
+                                1.0
+                            ],
+                            "localScale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "name": "eyeliner",
+                            "viewId": 4
+                        }
+                    ],
+                    "depth": 0,
+                    "dynamicUv": "disabled",
+                    "editorAnimationsOpen": false,
+                    "editorOpen": true,
+                    "editorPropertyOpen": true,
+                    "editorSelectedAnimation": "",
+                    "enabled": true,
+                    "localPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "localRotation": [
+                        8.146033536604591e-08,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "localScale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "name": "eyelinerContainer",
+                    "viewId": 4
+                }
+            ],
+            "depth": 0,
+            "dynamicUv": "disabled",
+            "editorAnimationsOpen": false,
+            "editorOpen": true,
+            "editorPropertyOpen": true,
+            "editorSelectedAnimation": "",
+            "enabled": true,
+            "localPosition": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "localRotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "localScale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "name": "baseEyeliner",
+            "viewId": 4
+        },
+        {
+            "animationEnabled": true,
+            "animations": {
+                "Take 001": {
+                    "duration": 4958.0,
+                    "layers": [
+                        {
+                            "name": ""
+                        }
+                    ],
+                    "timeInSeconds": 0.0
+                }
+            },
+            "children": [
+                {
+                    "animationEnabled": true,
+                    "components": [
+                        {
+                            "blendShapeWeightsExpanded": false,
+                            "bonesExpanded": false,
+                            "enabled": true,
+                            "material": "~/eyelashesMat",
+                            "mesh": "~/__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/eyes2_mesh.armesh",
+                            "meshDriver": "vertices2DEyes2",
+                            "open": true,
+                            "type": "meshRenderer"
+                        }
+                    ],
+                    "depth": 0,
+                    "dynamicUv": "disabled",
+                    "editorAnimationsOpen": false,
+                    "editorOpen": false,
+                    "editorPropertyOpen": true,
+                    "editorSelectedAnimation": "",
+                    "enabled": true,
+                    "localPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "localRotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "localScale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "name": "eyelashes",
+                    "viewId": 5
+                }
+            ],
+            "depth": 0,
+            "dynamicUv": "disabled",
+            "editorAnimationsOpen": false,
+            "editorOpen": true,
+            "editorPropertyOpen": true,
+            "editorSelectedAnimation": "",
+            "enabled": true,
+            "localPosition": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "localRotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "localScale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "name": "base_eyelashes",
+            "viewId": 2
+        },
+        {
+            "animationEnabled": true,
+            "children": [
+                {
+                    "animationEnabled": true,
+                    "components": [
+                        {
+                            "blendShapeWeightsExpanded": false,
+                            "bonesExpanded": false,
+                            "enabled": true,
+                            "material": "~/eyeshadowMat",
+                            "mesh": "~/__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/eyes_mesh.armesh",
+                            "meshDriver": "vertices2DEyes",
+                            "open": true,
+                            "type": "meshRenderer"
+                        }
+                    ],
+                    "depth": 0,
+                    "dynamicUv": "cameraTextureUv2",
+                    "editorAnimationsOpen": false,
+                    "editorOpen": false,
+                    "editorPropertyOpen": true,
+                    "editorSelectedAnimation": "",
+                    "enabled": true,
+                    "localPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "localRotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "localScale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "name": "eyeshadow",
+                    "viewId": 3
+                }
+            ],
+            "depth": 0,
+            "dynamicUv": "disabled",
+            "editorAnimationsOpen": false,
+            "editorOpen": true,
+            "editorPropertyOpen": true,
+            "editorSelectedAnimation": "",
+            "enabled": true,
+            "localPosition": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "localRotation": [
+                -0.0,
+                -0.0,
+                -0.0,
+                1.0
+            ],
+            "localScale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "name": "base_eyeshadow",
+            "viewId": 3
+        },
+        {
+            "animationEnabled": true,
+            "components": [
+                {
+                    "blendShapeWeightsExpanded": false,
+                    "bonesExpanded": false,
+                    "enabled": true,
+                    "material": "~/LutMat",
+                    "mesh": "~/__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/quad_mesh.armesh",
+                    "meshDriver": "none",
+                    "open": true,
+                    "type": "meshRenderer"
+                }
+            ],
+            "depth": 0,
+            "dynamicUv": "disabled",
+            "editorAnimationsOpen": false,
+            "editorOpen": false,
+            "editorPropertyOpen": true,
+            "editorSelectedAnimation": "",
+            "enabled": true,
+            "localPosition": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "localRotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "localScale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "name": "PostprocessLUT",
+            "viewId": 18
+        }
+    ],
+    "depth": 0,
+    "dynamicUv": "disabled",
+    "editorAnimationsOpen": true,
+    "editorOpen": true,
+    "editorPropertyOpen": true,
+    "editorSelectedAnimation": "",
+    "enabled": true,
+    "hiddenViewIds": [],
+    "localPosition": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "localRotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+    ],
+    "localScale": [
+        1.0,
+        1.0,
+        1.0
+    ],
+    "name": "RootNode",
+    "space": "camera",
+    "viewId": 2
+}

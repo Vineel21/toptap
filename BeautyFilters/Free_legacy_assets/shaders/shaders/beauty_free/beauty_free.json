@@ -1,0 +1,25 @@
+{
+	"name" : "beauty_free",
+	"displayName" : "Beauty free",
+	"textures" : [
+		{
+			"name" : "inputtex",
+			"displayName" : "Input Texture",
+			"stage" : 0
+		},
+		{
+			"name" : "foundationtex",
+			"displayName" : "Foundation mask",
+			"stage" : 1
+		}
+	],
+
+	"uniforms" : [
+		{
+			"name" : "foundationColor",
+			"displayName" : "Foundation Color",
+			"type" : "Vec4",
+			"defaultValue" : [1.0, 1.0, 1.0, 1.0]
+		}
+	]
+}

@@ -1,0 +1,33 @@
+Free Beauty Package Overview
+-----------------------------
+DeepAR free beauty package offers assets and best practices to create a wide variety of basic beauty and makeup looks. With this package users can easily implement their beauty/makeup looks that have the following features:
+    - Foundation makeup - choose the color and intensity of the foundation makeup layer
+    - Eyeliner - comes with 2 premade eyeliner styles which can be used as a template to create your new eyeliner styles.
+    - Eyelashes - comes with 2 premade eyelashes styles which can be used as a template to create your own new eyelashes styles.
+    - Eyeshadow - comes with 2  eyeshadow shape masks - smokey and cateye. Users can apply any color to those two styles, as well as create their styles based on provided templates.
+    - Lips - apply lipstick color to the lips. It comes with 2 examples of lipstick colors. Users can create their variants by changing the colors of the provided textures.
+    - LUT - apply color correction overlay to the whole scene. Comes with 2 LUT filter examples.
+
+Following is the explanation of all the  assets included in this package:
+
+1. baseBeauty DeepAR Studio file - all basic beauty elements that are described above are setup in this Studio file. It should be used as a basis for each new beauty look. Users should just change parameters on different materials like textures and/or colors.
+
+2. FbxModels folder - includes all .fbx models used in the baseBeauty file:
+    - faceBeauty - a 3D model that covers the user's face on which foundation effects are applied. In baseBeauty it uses BeautyFree shader which already implements slots for foundation and smoothing:
+        - alpha mask defining the area of effect for foundation makeup
+        - Foundation color - which color is applied as the foundation makeup color. Alpha can be used to modify the intensity.
+    - eyes.fbx - this model is used for eyeshadow and eyeliner effects. It is a flat model that covers the area around the eyes up to eyebrows. It is resized as the eyebrows are moving which makes this model especially good to apply eyeshadow.
+    - eyes2.fbx - the same model as eyes.fbx but does not resize with eyebrows movement, meaning the area it covers around the eyes is static and does not deform with eyebrows movement. This makes it good to use for eyelashes effect.
+    - lips.fbx - an .fbx model used to track user's lips. Used to apply lipstick colors.
+
+3. Looks folder - contains 2 beauty/makeup looks (DeepAR Studio file) created with various assets included in this package (look1 and look2)
+
+4. Shaders - contains beauty shader that is used to apply foundation effects on the face.
+
+5. Textures - most of the beauty features are applied via different textures, either as an alpha mask or as a diffuse texture.
+    - Eyelashes - diffuse texture for eyelashes. Applied on eyes2.fbx model via "Unlit Texture & Color" shader and Alpha/Normal blend mode. It contains 2 eyelashes examples - "goregeous" and "sexy" style.
+    - Eyeliner - diffuse texture for eyeliner. Applied on eyes.fbx model via "Unlit Texture & Color" shader and Alpha/Normal blend mode. It contains 2 eyeliner examples - smooth and luxe.
+    - Eyeshadow - alpha mask. Applied on eyes.fbx model via "Unlit Texture & Color" shader and Alpha/Normal blend mode. It contains 2 eyeshadow styles - basic and smokey. These are alpha masks that define the area where the Color parameter will apply. 
+    - Face - alpha masks that define the area of foundation color application.
+    - Lips - diffuse texture that is used to apply color to lips. Applied on lips.fbx with "Unlit texture" shader and Multiply blend mode. It contains 2 different lipstick colors pink and red matte. Users can create their own by modifying the provided textures with tools like Photoshop or Gimp.
+    - LUTS - lookup table textures used for color correction across the whole screen type of effects. To learn more how to create and use LUT filters in DeepAR Studio read following tutorial: https://help.deepar.ai/en/articles/3669047-lut-filter

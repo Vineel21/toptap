@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "1021103474668",
+    "project_id": "toptap-24cab",
+    "storage_bucket": "toptap-24cab.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1021103474668:android:6832a9835f548fc462a2c9",
+        "android_client_info": {
+          "package_name": "com.fourtech.toptap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1021103474668-niembk3bb28d7uqr51fr8fv2kkbb79r4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fourtech.toptap",
+            "certificate_hash": "8aeeb737c14e7e4ef9cd3f31c2cc702d6b09eadf"
+          }
+        },
+        {
+          "client_id": "1021103474668-qoojka8dk83q7eei3pfhmusqkat6kb4t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fourtech.toptap",
+            "certificate_hash": "c1051155b35793309aae2aed8aa4e1e58d411f25"
+          }
+        },
+        {
+          "client_id": "1021103474668-ukbp4v990bmtfi9agcm17t6h7k2a60c2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClMrc9a3rMMaRLbLyAvoZtmyQnoR2NTBg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1021103474668-ukbp4v990bmtfi9agcm17t6h7k2a60c2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1021103474668-6crnhc822n1l66d8q1ht95j02j6r0ail.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.fourtech.toptap"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,612 @@
+// ignore_for_file: deprecated_member_use
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:shortzz/common/widget/black_gradient_shadow.dart';
+import 'package:shortzz/model/livestream/livestream.dart';
+import 'package:shortzz/model/livestream/livestream_user_state.dart';
+import 'package:shortzz/screen/live_stream/livestream_screen/livestream_screen_controller.dart';
+import 'package:shortzz/screen/live_stream/livestream_screen/view/livestream_comment_view.dart';
+import 'package:shortzz/screen/live_stream/livestream_screen/widget/live_stream_like_button.dart';
+import 'package:shortzz/screen/live_stream/livestream_screen/widget/live_stream_text_field.dart';
+import 'package:shortzz/screen/live_stream/livestream_screen/widget/livestream_exist_message_bar.dart';
+import 'package:shortzz/screen/live_stream/livestream_screen/widget/members_sheet.dart';
+import 'package:shortzz/utilities/color_res.dart';
+
+class LiveStreamBottomView extends StatelessWidget {
+  final bool isAudience;
+  final LivestreamScreenController controller;
+
+  const LiveStreamBottomView({
+    Key? key,
+    this.isAudience = false,
+    required this.controller,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SizedBox(
+        height: Get.height / 3,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            const BlackGradientShadow(height: 200),
+            // Floating Right Controls (positioned absolutely)
+            Obx(() => Positioned(
+                  right: 15,
+                  bottom: 80,
+                  child: AnimatedSlide(
+                    duration:
+                        const Duration(milliseconds: 300),
+                    offset: controller
+                            .isRightControlsVisible.value
+                        ? Offset.zero
+                        : const Offset(0, 1),
+                    child: AnimatedOpacity(
+                      duration:
+                          const Duration(milliseconds: 200),
+                      opacity: controller
+                              .isRightControlsVisible.value
+                          ? 1.0
+                          : 0.0,
+                      child: controller
+                              .isRightControlsVisible.value
+                          ? _buildRightControls(context)
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                )),
+            Column(
+              children: [
+                // Comments Section
+                Expanded(
+                  child: Obx(() {
+                    bool isVisible =
+                        controller.isViewVisible.value;
+                    return AnimatedOpacity(
+                      duration:
+                          const Duration(milliseconds: 200),
+                      opacity: isVisible ? 1 : 0,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 10),
+                        child: LiveStreamCommentView(
+                            controller: controller),
+                      ),
+                    );
+                  }),
+                ),
+                // Bottom Controls Row
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 15, vertical: 2),
+                  child: _buildBottomControlsRow(context),
+                ),
+                // Host Controls (if user is host/co-host)
+                _buildHostControls(),
+                // Exit Message Bar
+                Obx(() {
+                  Livestream stream =
+                      controller.liveData.value;
+                  if ((stream.type ==
+                              LivestreamType.battle &&
+                          stream.battleType ==
+                              BattleType.end) ||
+                      controller.isMinViewerTimeout.value) {
+                    return LivestreamExistMessageBar(
+                        controller: controller,
+                        stream: stream);
+                  } else {
+                    return const SizedBox();
+                  }
+                }),
+                const SizedBox(height: 0),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomControlsRow(BuildContext context) {
+    return Obx(() {
+      bool isVisible = controller.isViewVisible.value;
+      Livestream stream = controller.liveData.value;
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildHostButton(context),
+          Expanded(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: isVisible ? 1 : 0,
+              child: Row(
+                children: [
+                  if (stream.type != LivestreamType.battle)
+                    GestureDetector(
+                      onTap: controller.toggleView,
+                      child: AnimatedRotation(
+                        duration: const Duration(
+                            milliseconds: 200),
+                        turns: isVisible ? 0 : 0.5,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black
+                                .withOpacity(0.5),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: Colors.white
+                                    .withOpacity(0.3)),
+                          ),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (stream.type != LivestreamType.battle)
+                    const SizedBox(width: 8),
+                  Expanded(
+                    child: LiveStreamTextFieldView(
+                      isAudience: isAudience,
+                      controller: controller,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  LiveStreamLikeButton(
+                    onLikeTap: (p0) {
+                      controller.onLikeTap = p0;
+                    },
+                    onTap: controller.onLikeButtonTap,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Right: Fixed Up Arrow Toggle Button
+          GestureDetector(
+            onTap: () {
+              controller.isRightControlsVisible.value =
+                  !controller.isRightControlsVisible.value;
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: Colors.white.withOpacity(0.3)),
+              ),
+              child: AnimatedRotation(
+                duration: const Duration(milliseconds: 200),
+                turns:
+                    controller.isRightControlsVisible.value
+                        ? 0.5
+                        : 0,
+                child: const Icon(
+                  Icons.keyboard_arrow_up,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildHostControls() {
+    return Obx(() {
+      int? userId = controller.myUser.value?.id;
+      LivestreamUserState? state =
+          controller.liveUsersStates.firstWhereOrNull(
+              (element) => element.userId == userId);
+      final isHostOrCoHost =
+          state?.type == LivestreamUserType.host ||
+              state?.type == LivestreamUserType.coHost;
+      bool isMute = state?.isMuted ?? false;
+      bool isVideoOn = state?.isVideoOn ?? false;
+      Livestream stream = controller.liveData.value;
+      bool isBattleRunning =
+          stream.battleType == BattleType.running;
+      if (!isHostOrCoHost) return const SizedBox();
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (LivestreamUserType.coHost == state?.type &&
+                stream.type == LivestreamType.livestream)
+              IconButton(
+                icon: const Icon(Icons.close,
+                    color: Colors.red),
+                onPressed: () {
+                  if (isBattleRunning) {
+                    controller.showSnackBar(
+                        'Cannot leave during battle');
+                  } else {
+                    controller.closeCoHostStream(userId);
+                  }
+                },
+              ),
+            IconButton(
+              icon: const Icon(Icons.flip_camera_ios,
+                  color: Colors.white),
+              onPressed: controller.toggleFlipCamera,
+            ),
+            IconButton(
+              icon: Icon(isMute ? Icons.mic_off : Icons.mic,
+                  color:
+                      isMute ? Colors.red : Colors.white),
+              onPressed: () => controller.toggleMic(isMute),
+            ),
+            IconButton(
+              icon: Icon(
+                  isVideoOn
+                      ? Icons.videocam
+                      : Icons.videocam_off,
+                  color: isVideoOn
+                      ? Colors.white
+                      : Colors.red),
+              onPressed: () =>
+                  controller.toggleVideo(isVideoOn),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildHostButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Get.bottomSheet(
+          const MembersSheet(isHost: true),
+          isScrollControlled: true,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+              color: Colors.white.withOpacity(0.3)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.people,
+                color: Colors.white, size: 20),
+            SizedBox(width: 6),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRightControls(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildControlButton(
+          context,
+          icon: Icons.face_retouching_natural,
+          onTap: () {
+            _showBeautyFilters(context);
+          },
+        ),
+        const SizedBox(height: 10),
+        _buildControlButton(
+          context,
+          icon: Icons.share,
+          onTap: () {
+            _shareStream(context);
+          },
+        ),
+        const SizedBox(height: 30),
+        // _buildControlButton(
+        //   context,
+        //   icon: Icons.more_vert,
+        //   onTap: () {
+        //     _showMoreOptions(context);
+        //   },
+        // ),
+      ],
+    );
+  }
+
+  Widget _buildControlButton(
+    BuildContext context, {
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Colors.white.withOpacity(0.3)),
+        ),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: 18,
+        ),
+      ),
+    );
+  }
+
+  void _showBeautyFilters(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Beauty Filters',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              crossAxisSpacing: 15,
+              mainAxisSpacing: 15,
+              children: [
+                _buildFilterOption('Smooth', Icons.blur_on,
+                    () {
+                  Get.back();
+                }),
+                _buildFilterOption(
+                    'Brighten', Icons.brightness_high, () {
+                  Get.back();
+                }),
+                _buildFilterOption(
+                    'Eyes', Icons.remove_red_eye, () {
+                  Get.back();
+                }),
+                _buildFilterOption('Face', Icons.face, () {
+                  Get.back();
+                }),
+                _buildFilterOption('Lips', Icons.favorite,
+                    () {
+                  Get.back();
+                }),
+                _buildFilterOption('Reset', Icons.refresh,
+                    () {
+                  Get.back();
+                }),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[700],
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Get.back(),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ColorRes.themeColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      Get.back();
+                    },
+                    child: const Text('Apply'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterOption(
+      String title, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareStream(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Share Stream',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildShareOption(
+                    'WhatsApp', Icons.message),
+                _buildShareOption(
+                    'Instagram', Icons.camera_alt),
+                _buildShareOption('Copy Link', Icons.link),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareOption(String title, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.white),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  void _showMoreOptions(BuildContext context) {
+    int? userId = controller.myUser.value?.id;
+    LivestreamUserState? state = controller.liveUsersStates
+        .firstWhereOrNull(
+            (element) => element.userId == userId);
+    bool isMute = state?.isMuted ?? false;
+    bool isVideoOn = state?.isVideoOn ?? false;
+
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'More Options',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.flip_camera_ios,
+                  color: Colors.white),
+              title: const Text('Flip Camera',
+                  style: TextStyle(color: Colors.white)),
+              onTap: () {
+                controller.toggleCamera();
+                Get.back();
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                isMute ? Icons.mic_off : Icons.mic,
+                color: isMute ? Colors.red : Colors.white,
+              ),
+              title: Text(
+                isMute
+                    ? 'Turn On Microphone'
+                    : 'Turn Off Microphone',
+                style: const TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                controller.toggleMic(isMute);
+                Get.back();
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                isVideoOn
+                    ? Icons.videocam
+                    : Icons.videocam_off,
+                color:
+                    isVideoOn ? Colors.white : Colors.red,
+              ),
+              title: Text(
+                isVideoOn
+                    ? 'Turn Off Camera'
+                    : 'Turn On Camera',
+                style: const TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                controller.toggleVideo(isVideoOn);
+                Get.back();
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+}

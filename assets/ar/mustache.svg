@@ -1,0 +1,9 @@
+<svg width="256" height="128" viewBox="0 0 256 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Mustache -->
+  <path d="M 50 64 Q 80 40 128 50 Q 176 40 206 64 Q 200 90 170 85 Q 140 80 128 75 Q 116 80 86 85 Q 56 90 50 64 Z" fill="#8B4513"/>
+  <path d="M 60 64 Q 85 50 128 58 Q 171 50 196 64 Q 190 80 165 78 Q 140 75 128 72 Q 116 75 91 78 Q 66 80 60 64 Z" fill="#654321"/>
+  
+  <!-- Mustache Details -->
+  <ellipse cx="90" cy="68" rx="8" ry="4" fill="#5D4037"/>
+  <ellipse cx="166" cy="68" rx="8" ry="4" fill="#5D4037"/>
+</svg>

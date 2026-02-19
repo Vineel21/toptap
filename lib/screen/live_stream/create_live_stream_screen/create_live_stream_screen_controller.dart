@@ -1,0 +1,625 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shortzz/common/controller/base_controller.dart';
+import 'package:shortzz/common/extensions/user_extension.dart';
+import 'package:shortzz/common/manager/logger.dart';
+import 'package:shortzz/common/manager/session_manager.dart';
+import 'package:shortzz/common/widget/confirmation_dialog.dart';
+import 'package:shortzz/languages/languages_keys.dart';
+import 'package:shortzz/model/general/settings_model.dart';
+import 'package:shortzz/model/livestream/app_user.dart';
+import 'package:shortzz/model/livestream/livestream.dart';
+import 'package:shortzz/model/livestream/livestream_user_state.dart';
+import 'package:shortzz/model/user_model/user_model.dart';
+import 'package:shortzz/screen/live_stream/livestream_screen/host/livestream_host_screen.dart';
+import 'package:shortzz/utilities/firebase_const.dart';
+import 'package:zego_express_engine/zego_express_engine.dart';
+
+class CreateLiveStreamScreenController
+    extends BaseController {
+  RxBool isRestricted = false.obs;
+  RxBool hasLiveGoal = false.obs;
+  RxString liveGoalTitle = ''.obs;
+  RxInt liveGoalTargetAmount = 0.obs;
+  RxString liveGoalType =
+      'followers'.obs; // followers, likes, gifts, duration
+  bool isFrontCamera = true;
+  FirebaseFirestore db = FirebaseFirestore.instance;
+  ZegoExpressEngine zegoEngine = ZegoExpressEngine.instance;
+
+  Rx<User?> get myUser =>
+      SessionManager.instance.getUser().obs;
+
+  Setting? get _setting =>
+      SessionManager.instance.getSettings();
+  Rx<Widget?> localView = Rx(null);
+  RxInt localViewID = RxInt(-1);
+  TextEditingController titleController =
+      TextEditingController();
+
+  @override
+  void onInit() {
+    super.onInit();
+    initZegoEngine();
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+    stopPreview();
+  }
+
+  Future<bool> requestPermission() async {
+    Loggers.info("requestPermission...");
+    try {
+      PermissionStatus microphoneStatus =
+          await Permission.microphone.request();
+      if (microphoneStatus != PermissionStatus.granted) {
+        Loggers.error(
+            'Error: Microphone permission not granted!!!');
+        return false;
+      }
+    } on Exception catch (error) {
+      Loggers.error(
+          "[ERROR], request microphone permission exception, $error");
+      return false;
+    }
+
+    try {
+      PermissionStatus cameraStatus =
+          await Permission.camera.request();
+      if (cameraStatus != PermissionStatus.granted) {
+        Loggers.error(
+            '[Error]: Camera permission not granted!!!');
+        return false;
+      }
+    } on Exception catch (error) {
+      Loggers.error(
+          "[ERROR], request camera permission exception, $error");
+      return false;
+    }
+
+    return true;
+  }
+
+  void initZegoEngine() async {
+    bool isPermissionGranted = await requestPermission();
+    if (isPermissionGranted) {
+      await initializeCameraPreview();
+    } else {
+      Get.bottomSheet(ConfirmationSheet(
+          title: LKey.cameraMicrophonePermissionTitle.tr,
+          description:
+              LKey.cameraMicrophonePermissionDescription.tr,
+          onTap: openAppSettings));
+    }
+  }
+
+  Future<void> initializeCameraPreview() async {
+    try {
+      showLoader();
+      // Enable the front camera and un-mute audio streams
+      await zegoEngine.enableCamera(true);
+      await zegoEngine.mutePublishStreamAudio(false);
+      zegoEngine.muteMicrophone(false);
+
+      // Use the front camera for the main publishing channel
+      zegoEngine.useFrontCamera(true,
+          channel: ZegoPublishChannel.Main);
+
+      // Create a canvas view for local video preview
+      await zegoEngine.createCanvasView((viewID) async {
+        localViewID.value = viewID;
+        Loggers.info('LOCAL VIEW ID : $localViewID');
+
+        // Set up the preview canvas with aspect fill mode
+        ZegoCanvas previewCanvas = ZegoCanvas(viewID,
+            viewMode: ZegoViewMode.AspectFill);
+        zegoEngine.startPreview(canvas: previewCanvas);
+      }).then((canvasViewWidget) {
+        // Assign the preview widget to a reactive variable
+        localView.value = canvasViewWidget;
+      });
+    } catch (e, stackTrace) {
+      // Log any errors during the preview setup
+      Loggers.error(
+          'Failed to initialize camera preview: $e\n$stackTrace');
+    } finally {
+      stopLoader();
+    }
+  }
+
+  void toggleCamera() {
+    isFrontCamera = !isFrontCamera;
+    zegoEngine.useFrontCamera(isFrontCamera,
+        channel: ZegoPublishChannel.Main);
+  }
+
+  void onCloseTap() {
+    Get.back();
+    stopPreview();
+  }
+
+  Future<void> stopPreview() async {
+    zegoEngine.stopPreview();
+    if (localViewID.value != -1) {
+      await zegoEngine.destroyCanvasView(localViewID.value);
+      localViewID.value = -1;
+      localView.value = null;
+    }
+  }
+
+  void onLiveGoalTap() {
+    if (hasLiveGoal.value) {
+      // If already has goal, show confirmation to remove
+      Get.dialog(
+        AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Text(
+            'Remove Live Goal?',
+            style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'Do you want to remove your current live goal?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text('Cancel',
+                  style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () {
+                hasLiveGoal.value = false;
+                liveGoalTitle.value = '';
+                liveGoalTargetAmount.value = 0;
+                Get.back();
+              },
+              child: Text('Remove',
+                  style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Show live goal setup sheet
+      _showLiveGoalSheet();
+    }
+  }
+
+  void _showLiveGoalSheet() {
+    final goalTitleController = TextEditingController();
+    final targetAmountController = TextEditingController();
+    RxString selectedGoalType = 'followers'.obs;
+
+    Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Icon(Icons.flag,
+                    color: Colors.orange, size: 24),
+                SizedBox(width: 12),
+                Text(
+                  'Set Live Goal',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Spacer(),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: Icon(Icons.close,
+                      color: Colors.white),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 20),
+
+            // Goal Title
+            Text(
+              'Goal Title',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8),
+            TextField(
+              controller: goalTitleController,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'e.g., Reach 100 new followers',
+                hintStyle: TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.grey[800],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+              ),
+            ),
+
+            SizedBox(height: 20),
+
+            // Goal Type
+            Text(
+              'Goal Type',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8),
+            Obx(() => Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedGoalType.value,
+                      dropdownColor: Colors.grey[800],
+                      isExpanded: true,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 16),
+                      style: TextStyle(color: Colors.white),
+                      icon: Icon(Icons.keyboard_arrow_down,
+                          color: Colors.white),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'followers',
+                          child: Row(
+                            children: [
+                              Icon(Icons.person_add,
+                                  color: Colors.blue,
+                                  size: 20),
+                              SizedBox(width: 8),
+                              Text('New Followers'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'likes',
+                          child: Row(
+                            children: [
+                              Icon(Icons.favorite,
+                                  color: Colors.red,
+                                  size: 20),
+                              SizedBox(width: 8),
+                              Text('Likes'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'gifts',
+                          child: Row(
+                            children: [
+                              Icon(Icons.card_giftcard,
+                                  color: Colors.purple,
+                                  size: 20),
+                              SizedBox(width: 8),
+                              Text('Gifts Received'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'duration',
+                          child: Row(
+                            children: [
+                              Icon(Icons.timer,
+                                  color: Colors.green,
+                                  size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                  'Live Duration (minutes)'),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          selectedGoalType.value = value;
+                        }
+                      },
+                    ),
+                  ),
+                )),
+
+            SizedBox(height: 20),
+
+            // Target Amount
+            Text(
+              'Target Amount',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8),
+            TextField(
+              controller: targetAmountController,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Enter target number',
+                hintStyle: TextStyle(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.grey[800],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+              ),
+            ),
+
+            SizedBox(height: 30),
+
+            // Set Goal Button
+            GestureDetector(
+              onTap: () {
+                if (goalTitleController.text
+                        .trim()
+                        .isNotEmpty &&
+                    targetAmountController.text
+                        .trim()
+                        .isNotEmpty) {
+                  liveGoalTitle.value =
+                      goalTitleController.text.trim();
+                  liveGoalTargetAmount.value = int.tryParse(
+                          targetAmountController.text
+                              .trim()) ??
+                      0;
+                  liveGoalType.value =
+                      selectedGoalType.value;
+                  hasLiveGoal.value = true;
+                  Get.back();
+                  Get.snackbar(
+                    'Live Goal Set!',
+                    'Your live goal has been set successfully',
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Please fill in all fields',
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                  );
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.orange,
+                      Colors.deepOrange
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    'Set Goal',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 20),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Future<void> onStartLive() async {
+    Loggers.info('=== STARTING LIVE STREAM PROCESS ===');
+
+    if ((myUser.value?.followerCount ?? 0) <
+        (_setting?.minFollowersForLive ?? 0)) {
+      Loggers.info('Follower count check failed');
+      showSnackBar(LKey.minFollowersNeededToGoLive.trParams(
+          {'count': '${_setting?.minFollowersForLive}'}));
+      return;
+    }
+
+    if (titleController.text.trim().isEmpty) {
+      Loggers.info('Title is empty');
+      return showSnackBar(LKey.enterLiveStreamTitle.tr);
+    }
+
+    User? user = myUser.value;
+    if (user == null) {
+      Loggers.error(
+          'User Not found. Cannot start live stream.');
+      return;
+    }
+    int userId = user.id ?? -1;
+
+    if (userId == -1) {
+      Loggers.error('Wrong User ID is $userId');
+      return;
+    }
+
+    if (localView.value == null) {
+      Loggers.info(
+          'Local view is null, checking camera initialization...');
+      showSnackBar('Local View not found');
+      return;
+    }
+
+    Loggers.info(
+        'All pre-checks passed, creating livestream...');
+
+    // Create Livestream model
+    int time = DateTime.now().millisecondsSinceEpoch;
+
+    try {
+      Loggers.info(
+          'Creating livestream model with goal data: hasGoal=${hasLiveGoal.value}, title=${liveGoalTitle.value}');
+
+      // Try creating without live goal first to test
+      Livestream livestream;
+      try {
+        livestream = user.livestream(
+            type: LivestreamType.livestream,
+            time: time,
+            description: titleController.text.trim(),
+            restrictToJoin: isRestricted.value ? 1 : 0,
+            hostViewId: localViewID.value,
+            hasLiveGoal: hasLiveGoal.value,
+            liveGoalTitle: hasLiveGoal.value
+                ? liveGoalTitle.value
+                : null,
+            liveGoalType: hasLiveGoal.value
+                ? liveGoalType.value
+                : null,
+            liveGoalTargetAmount: hasLiveGoal.value
+                ? liveGoalTargetAmount.value
+                : null);
+      } catch (e) {
+        Loggers.error(
+            'Error creating livestream with goals: $e');
+        // Fallback: create without live goal parameters
+        livestream = user.livestream(
+            type: LivestreamType.livestream,
+            time: time,
+            description: titleController.text.trim(),
+            restrictToJoin: isRestricted.value ? 1 : 0,
+            hostViewId: localViewID.value);
+      }
+
+      Loggers.info('Livestream model created successfully');
+
+      // Create LivestreamUser model
+      AppUser livestreamUser = user.appUser;
+      Loggers.info('LivestreamUser model created');
+
+      // Create LivestreamUser model
+      LivestreamUserState livestreamUserState =
+          user.streamState(
+              time: time,
+              stateType: LivestreamUserType.host);
+
+      Loggers.info('LivestreamUserState model created');
+      Loggers.info('Starting live stream...');
+      Loggers.info(
+          'Livestream Model: ${livestream.toJson()}');
+      Loggers.info(
+          'Livestream User Model: ${livestreamUser.toJson()}');
+
+      // Show loader before Firestore operations
+      showLoader();
+      Loggers.info(
+          'Loader shown, starting Firestore operations...');
+
+      DocumentReference livestreamRef = db
+          .collection(FirebaseConst.liveStreams)
+          .doc('$userId');
+      DocumentReference usersRef = db
+          .collection(FirebaseConst.appUsers)
+          .doc('$userId');
+      DocumentReference userStateRef = livestreamRef
+          .collection(FirebaseConst.userState)
+          .doc('$userId');
+
+      WriteBatch batch = db.batch();
+
+      batch.set(livestreamRef, livestream.toJson());
+      batch.set(usersRef, livestreamUser.toJson());
+      batch.set(userStateRef, livestreamUserState.toJson());
+
+      Loggers.info(
+          'Batch operations prepared, committing...');
+
+      // Commit batch operation
+      await batch.commit();
+
+      Loggers.success('Livestream started successfully!');
+
+      // Navigate to live stream host screen
+      Widget? hostPreview = localView.value;
+      Loggers.info('Navigating to host screen...');
+
+      Get.off(() => LivestreamHostScreen(
+          hostPreview: hostPreview,
+          livestream: livestream,
+          isHost: true));
+    } catch (e, stackTrace) {
+      Loggers.error('Failed to start live stream: $e');
+      Loggers.error('StackTrace: $stackTrace');
+      showSnackBar('Failed to start live stream: $e');
+    } finally {
+      stopLoader(); // Ensure loader stops in all cases
+      Loggers.info('Loader stopped');
+    }
+  }
+
+  // Debug method to test live goal creation
+  void testLiveGoalCreation() {
+    try {
+      User? user = myUser.value;
+      if (user == null) {
+        Loggers.error('No user found for testing');
+        return;
+      }
+
+      int time = DateTime.now().millisecondsSinceEpoch;
+
+      Livestream testStream = user.livestream(
+        type: LivestreamType.livestream,
+        time: time,
+        description: "Test Stream",
+        hasLiveGoal: true,
+        liveGoalTitle: "Test Goal",
+        liveGoalType: "likes",
+        liveGoalTargetAmount: 100,
+      );
+
+      Loggers.info(
+          'Test livestream created successfully: ${testStream.toJson()}');
+      showSnackBar('Live goal test passed!');
+    } catch (e) {
+      Loggers.error('Live goal test failed: $e');
+      showSnackBar('Live goal test failed: $e');
+    }
+  }
+}

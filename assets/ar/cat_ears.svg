@@ -1,0 +1,14 @@
+<svg width="512" height="256" viewBox="0 0 512 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cat Ears -->
+  <!-- Left Ear -->
+  <polygon points="128,50 90,180 166,180" fill="#FFB6C1"/>
+  <polygon points="128,70 105,150 151,150" fill="#FF69B4"/>
+  
+  <!-- Right Ear -->
+  <polygon points="384,50 346,180 422,180" fill="#FFB6C1"/>
+  <polygon points="384,70 361,150 407,150" fill="#FF69B4"/>
+  
+  <!-- Ear Tips -->
+  <circle cx="128" cy="60" r="6" fill="#FF1493"/>
+  <circle cx="384" cy="60" r="6" fill="#FF1493"/>
+</svg>

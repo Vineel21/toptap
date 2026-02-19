@@ -1,0 +1,504 @@
+package com.shortzz.deepar
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.util.Log
+import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import ai.deepar.ar.DeepAR
+import ai.deepar.ar.DeepARListener
+import android.opengl.GLSurfaceView
+import android.os.Handler
+import android.os.Looper
+import android.graphics.SurfaceTexture
+import android.view.Surface
+import java.io.File
+import java.util.*
+
+/**
+ * DeepAR Flutter Plugin for Android
+ * Professional AR filter integration with enhanced face tracking
+ */
+class DeepARFlutterPlugin : FlutterPlugin, MethodCallHandler {
+    
+    private var channel: MethodChannel? = null
+    private var context: Context? = null
+    private var deepAR: DeepAR? = null
+    private var glSurfaceView: GLSurfaceView? = null
+    private var textureId: Long = -1
+    private var surfaceTexture: SurfaceTexture? = null
+    private var surface: Surface? = null
+    
+    // Performance tracking
+    private var frameCount = 0
+    private var lastFpsTime = System.currentTimeMillis()
+    private var currentFps = 0.0
+    private var renderStartTime = 0L
+    
+    // DeepAR state
+    private var isInitialized = false
+    private var currentFilterPath: String? = null
+    private var filterIntensity = 1.0f
+    private var beautySettings = mutableMapOf<String, Float>()
+    
+    companion object {
+        private const val TAG = "DeepARFlutter"
+        private const val CHANNEL_NAME = "deepar_flutter"
+        
+        // Your DeepAR license key
+        private const val LICENSE_KEY = "YOUR_DEEPAR_LICENSE_KEY_HERE"
+    }
+
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        context = binding.applicationContext
+        channel = MethodChannel(binding.binaryMessenger, CHANNEL_NAME)
+        channel?.setMethodCallHandler(this)
+        
+        Log.d(TAG, "DeepAR Flutter Plugin attached")
+    }
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        channel?.setMethodCallHandler(null)
+        channel = null
+        context = null
+        cleanup()
+        
+        Log.d(TAG, "DeepAR Flutter Plugin detached")
+    }
+
+    override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+        when (call.method) {
+            "initialize" -> initialize(call, result)
+            "createTextureRenderer" -> createTextureRenderer(result)
+            "startCamera" -> startCamera(call, result)
+            "stopCamera" -> stopCamera(result)
+            "switchCamera" -> switchCamera(result)
+            "applyFilter" -> applyFilter(call, result)
+            "setFilterIntensity" -> setFilterIntensity(call, result)
+            "applyBeautySettings" -> applyBeautySettings(call, result)
+            "takePhoto" -> takePhoto(call, result)
+            "startVideoRecording" -> startVideoRecording(call, result)
+            "stopVideoRecording" -> stopVideoRecording(result)
+            "dispose" -> dispose(result)
+            "getPerformanceMetrics" -> getPerformanceMetrics(result)
+            else -> result.notImplemented()
+        }
+    }
+
+    /**
+     * Initialize DeepAR SDK
+     */
+    private fun initialize(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            if (isInitialized) {
+                result.success(true)
+                return
+            }
+
+            val context = this.context ?: run {
+                result.error("NO_CONTEXT", "Flutter context not available", null)
+                return
+            }
+
+            // Initialize DeepAR
+            deepAR = DeepAR(context)
+            deepAR?.setLicenseKey(LICENSE_KEY)
+            
+            // Set DeepAR listener
+            deepAR?.setAREventListener(object : DeepARListener() {
+                override fun screenshotTaken(bitmap: Bitmap?) {
+                    bitmap?.let { handlePhotoTaken(it) }
+                }
+
+                override fun videoRecordingStarted() {
+                    notifyFlutter("onVideoRecordingStarted", null)
+                }
+
+                override fun videoRecordingFinished() {
+                    notifyFlutter("onVideoRecordingFinished", null)
+                }
+
+                override fun videoRecordingFailed(exception: String?) {
+                    notifyFlutter("onVideoRecordingFailed", mapOf("error" to exception))
+                }
+
+                override fun faceVisibilityChanged(visible: Boolean) {
+                    notifyFlutter("onFaceVisibilityChanged", mapOf("visible" to visible))
+                }
+
+                override fun imageVisibilityChanged(visible: Boolean) {
+                    notifyFlutter("onImageVisibilityChanged", mapOf("visible" to visible))
+                }
+
+                override fun frameAvailable(image: Image?) {
+                    // Handle frame processing
+                    updatePerformanceMetrics()
+                }
+
+                override fun error(arError: ARErrorType?, description: String?) {
+                    Log.e(TAG, "DeepAR Error: $arError - $description")
+                    notifyFlutter("onError", mapOf(
+                        "type" to arError?.toString(),
+                        "description" to description
+                    ))
+                }
+            })
+
+            isInitialized = true
+            result.success(true)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize DeepAR", e)
+            result.error("INIT_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Create texture renderer for Flutter
+     */
+    private fun createTextureRenderer(result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            // Create surface texture for rendering
+            surfaceTexture = SurfaceTexture(0)
+            surface = Surface(surfaceTexture)
+            
+            // Set render surface
+            deepAR.setRenderSurface(surface, 1080, 1920) // Default resolution
+            
+            result.success(mapOf("textureId" to textureId))
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create texture renderer", e)
+            result.error("TEXTURE_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Start camera
+     */
+    private fun startCamera(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            val frontCamera = call.argument<Boolean>("frontCamera") ?: true
+            val cameraFacing = if (frontCamera) {
+                CameraResolutionPreset.P720
+            } else {
+                CameraResolutionPreset.P720
+            }
+
+            deepAR.startCamera(cameraFacing, 1280, 720)
+            result.success(true)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start camera", e)
+            result.error("CAMERA_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Stop camera
+     */
+    private fun stopCamera(result: MethodChannel.Result) {
+        try {
+            deepAR?.stopCamera()
+            result.success(true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop camera", e)
+            result.error("CAMERA_STOP_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Switch camera
+     */
+    private fun switchCamera(result: MethodChannel.Result) {
+        try {
+            deepAR?.switchCamera()
+            result.success(true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to switch camera", e)
+            result.error("CAMERA_SWITCH_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Apply DeepAR filter
+     */
+    private fun applyFilter(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            val filterPath = call.argument<String>("filterPath")
+            
+            if (filterPath == null || filterPath == "none") {
+                // Remove current filter
+                deepAR.switchEffect("slot", null)
+                currentFilterPath = null
+            } else {
+                // Apply new filter
+                val assetPath = "flutter_assets/assets/ar/filters/$filterPath"
+                deepAR.switchEffect("slot", assetPath)
+                currentFilterPath = filterPath
+            }
+            
+            result.success(true)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to apply filter", e)
+            result.error("FILTER_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Set filter intensity
+     */
+    private fun setFilterIntensity(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            val intensity = call.argument<Double>("intensity")?.toFloat() ?: 1.0f
+            filterIntensity = intensity.coerceIn(0.0f, 1.0f)
+            
+            // Apply intensity to current filter
+            deepAR.changeParameter("slot", "intensity", filterIntensity)
+            
+            result.success(true)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set filter intensity", e)
+            result.error("INTENSITY_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Apply beauty settings
+     */
+    private fun applyBeautySettings(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            val settings = call.argument<Map<String, Double>>("settings") ?: mapOf()
+            
+            settings.forEach { (key, value) ->
+                val floatValue = value.toFloat().coerceIn(0.0f, 1.0f)
+                beautySettings[key] = floatValue
+                
+                // Apply beauty parameter
+                when (key) {
+                    "skinSmoothing" -> deepAR.changeParameter("slot", "skinSmoothing", floatValue)
+                    "faceSlimming" -> deepAR.changeParameter("slot", "faceSlimming", floatValue)
+                    "eyeEnlargement" -> deepAR.changeParameter("slot", "eyeEnlargement", floatValue)
+                    "teethWhitening" -> deepAR.changeParameter("slot", "teethWhitening", floatValue)
+                    "lipEnhancement" -> deepAR.changeParameter("slot", "lipEnhancement", floatValue)
+                }
+            }
+            
+            result.success(true)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to apply beauty settings", e)
+            result.error("BEAUTY_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Take photo
+     */
+    private fun takePhoto(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            // Store result callback for later use
+            pendingPhotoResult = result
+            
+            // Take screenshot
+            deepAR.takeScreenshot()
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to take photo", e)
+            result.error("PHOTO_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Start video recording
+     */
+    private fun startVideoRecording(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            val context = this.context ?: run {
+                result.error("NO_CONTEXT", "Context not available", null)
+                return
+            }
+
+            // Create output file
+            val outputDir = File(context.getExternalFilesDir(null), "DeepAR")
+            if (!outputDir.exists()) outputDir.mkdirs()
+            
+            val fileName = "deepar_video_${System.currentTimeMillis()}.mp4"
+            val outputFile = File(outputDir, fileName)
+            
+            // Start recording
+            deepAR.startVideoRecording(outputFile.absolutePath, 1280, 720)
+            currentVideoPath = outputFile.absolutePath
+            
+            result.success(true)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start video recording", e)
+            result.error("RECORDING_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Stop video recording
+     */
+    private fun stopVideoRecording(result: MethodChannel.Result) {
+        try {
+            val deepAR = this.deepAR ?: run {
+                result.error("NOT_INITIALIZED", "DeepAR not initialized", null)
+                return
+            }
+
+            deepAR.stopVideoRecording()
+            
+            val videoPath = currentVideoPath
+            currentVideoPath = null
+            
+            result.success(mapOf("videoPath" to videoPath))
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop video recording", e)
+            result.error("RECORDING_STOP_FAILED", e.message, null)
+        }
+    }
+
+    /**
+     * Get performance metrics
+     */
+    private fun getPerformanceMetrics(result: MethodChannel.Result) {
+        result.success(mapOf(
+            "fps" to currentFps,
+            "renderTime" to (System.currentTimeMillis() - renderStartTime),
+            "frameCount" to frameCount
+        ))
+    }
+
+    /**
+     * Dispose resources
+     */
+    private fun dispose(result: MethodChannel.Result) {
+        cleanup()
+        result.success(true)
+    }
+
+    /**
+     * Cleanup resources
+     */
+    private fun cleanup() {
+        try {
+            deepAR?.release()
+            deepAR = null
+            
+            surface?.release()
+            surface = null
+            
+            surfaceTexture?.release()
+            surfaceTexture = null
+            
+            isInitialized = false
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during cleanup", e)
+        }
+    }
+
+    /**
+     * Handle photo taken
+     */
+    private var pendingPhotoResult: MethodChannel.Result? = null
+    
+    private fun handlePhotoTaken(bitmap: Bitmap) {
+        try {
+            val context = this.context ?: return
+            
+            // Save bitmap to file
+            val outputDir = File(context.getExternalFilesDir(null), "DeepAR")
+            if (!outputDir.exists()) outputDir.mkdirs()
+            
+            val fileName = "deepar_photo_${System.currentTimeMillis()}.jpg"
+            val outputFile = File(outputDir, fileName)
+            
+            outputFile.outputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            
+            // Return result to Flutter
+            Handler(Looper.getMainLooper()).post {
+                pendingPhotoResult?.success(mapOf("photoPath" to outputFile.absolutePath))
+                pendingPhotoResult = null
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save photo", e)
+            Handler(Looper.getMainLooper()).post {
+                pendingPhotoResult?.error("SAVE_FAILED", e.message, null)
+                pendingPhotoResult = null
+            }
+        }
+    }
+
+    /**
+     * Update performance metrics
+     */
+    private fun updatePerformanceMetrics() {
+        renderStartTime = System.currentTimeMillis()
+        frameCount++
+        
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastFpsTime >= 1000) {
+            currentFps = frameCount.toDouble()
+            frameCount = 0
+            lastFpsTime = currentTime
+        }
+    }
+
+    /**
+     * Notify Flutter of events
+     */
+    private fun notifyFlutter(method: String, arguments: Any?) {
+        Handler(Looper.getMainLooper()).post {
+            channel?.invokeMethod(method, arguments)
+        }
+    }
+
+    // State variables
+    private var currentVideoPath: String? = null
+}

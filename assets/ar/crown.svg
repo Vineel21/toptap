@@ -1,0 +1,14 @@
+<svg width="512" height="256" viewBox="0 0 512 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Crown -->
+  <polygon points="100,150 150,50 200,120 256,40 312,120 362,50 412,150 100,150" fill="#FFD700"/>
+  <polygon points="110,140 140,70 190,110 256,60 322,110 372,70 402,140 110,140" fill="#FFA500"/>
+  
+  <!-- Gems -->
+  <circle cx="150" cy="100" r="12" fill="#FF0000"/>
+  <circle cx="256" cy="80" r="15" fill="#0000FF"/>
+  <circle cx="362" cy="100" r="12" fill="#FF0000"/>
+  
+  <!-- Details -->
+  <rect x="240" y="150" width="32" height="20" fill="#FFD700"/>
+  <polygon points="248,170 264,170 256,180" fill="#FFA500"/>
+</svg>

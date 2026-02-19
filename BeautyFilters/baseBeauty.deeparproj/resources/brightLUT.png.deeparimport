@@ -1,0 +1,10 @@
+{
+    "compression": "lossless",
+    "dataType": "colorData",
+    "hasMipmaps": false,
+    "height": 512,
+    "originalFormatLossy": false,
+    "resizeMode": "bilinear",
+    "type": "texture",
+    "width": 512
+}

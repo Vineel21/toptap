@@ -1,0 +1,27 @@
+{
+    "flags": {
+        "blendMode": "multiply",
+        "cullMode": "off",
+        "enableDepthTest": false,
+        "writeAlpha": true,
+        "writeColor": true,
+        "writeDepth": false
+    },
+    "shader": "__dprs_int_f18caee1_d65d_4319_957b_2f6556abda06__/unlit_texture_color_shader.dprx",
+    "uniformValues": {
+        "s_texColor": {
+            "texture": "basic_eyeshadow.png",
+            "type": "texture"
+        },
+        "u_color": {
+            "color": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+            ],
+            "dataType": "color",
+            "type": "vector"
+        }
+    }
+}
