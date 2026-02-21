@@ -25,9 +25,15 @@ class AgoraCallService {
   bool _isMuted = false;
   bool _isVideoEnabled = true;
   bool _isSpeakerEnabled = true;
+  bool _pendingSpeakerRouteApply = false;
   bool _isHandlingTokenError = false;
+  bool _hasHandledTokenErrorForAttempt = false;
+  bool _isRecoveringLocalVideo = false;
+  bool _awaitingLocalVideoStart = false;
+  int _localVideoRecoveryAttempts = 0;
   int? _remoteUid;
   String? _currentChannelId;
+  String? _localVideoIssue;
 
   // Stream controllers for real-time updates
   final StreamController<bool> _connectionStateController =
@@ -36,6 +42,8 @@ class AgoraCallService {
       StreamController<int?>.broadcast();
   final StreamController<bool> _callEndedController =
       StreamController<bool>.broadcast();
+  final StreamController<String?> _localVideoIssueController =
+      StreamController<String?>.broadcast();
 
   // Getters
   bool get isInCall => _isInCall;
@@ -44,6 +52,7 @@ class AgoraCallService {
   bool get isVideoEnabled => _isVideoEnabled;
   bool get isSpeakerEnabled => _isSpeakerEnabled;
   int? get remoteUid => _remoteUid;
+  String? get localVideoIssue => _localVideoIssue;
 
   // Streams
   Stream<bool> get connectionStateStream =>
@@ -52,6 +61,8 @@ class AgoraCallService {
       _remoteUserController.stream;
   Stream<bool> get callEndedStream =>
       _callEndedController.stream;
+  Stream<String?> get localVideoIssueStream =>
+      _localVideoIssueController.stream;
 
   void _emitConnectionState(bool isConnected) {
     if (!_connectionStateController.isClosed) {
@@ -69,6 +80,136 @@ class AgoraCallService {
     if (!_callEndedController.isClosed) {
       _callEndedController.add(ended);
     }
+  }
+
+  void _emitLocalVideoIssue(String? issue) {
+    _localVideoIssue = issue;
+    if (!_localVideoIssueController.isClosed) {
+      _localVideoIssueController.add(issue);
+    }
+  }
+
+  void _markLocalVideoHealthy() {
+    _awaitingLocalVideoStart = false;
+    _localVideoRecoveryAttempts = 0;
+    if (_localVideoIssue != null) {
+      Loggers.info('Local video capture recovered');
+    }
+    _emitLocalVideoIssue(null);
+  }
+
+  bool _isLikelyLocalVideoFailure(
+      String stateName, String reasonName) {
+    return stateName.contains('failed') ||
+        reasonName.contains('failed') ||
+        reasonName.contains('failure') ||
+        reasonName.contains('device') ||
+        reasonName.contains('capture') ||
+        reasonName.contains('notfound') ||
+        reasonName.contains('not_found') ||
+        reasonName.contains('notready') ||
+        reasonName.contains('not_ready');
+  }
+
+  bool _isLikelyLocalVideoActive(String stateName) {
+    return stateName.contains('capturing') ||
+        stateName.contains('encoding') ||
+        stateName.contains('running');
+  }
+
+  Future<void> _scheduleLocalVideoStartupCheck() async {
+    await Future.delayed(const Duration(seconds: 3));
+    if (!_isInCall ||
+        !_isVideoCall ||
+        !_isVideoEnabled ||
+        _engine == null) {
+      return;
+    }
+    if (!_awaitingLocalVideoStart) {
+      return;
+    }
+
+    Loggers.warning(
+        'Local video did not reach capturing state in time; retrying');
+    _emitLocalVideoIssue(
+        'Camera is taking longer to start. Retrying...');
+    await _recoverLocalVideoCapture(
+      reason: 'startup_timeout',
+    );
+  }
+
+  Future<void> _recoverLocalVideoCapture(
+      {bool force = false,
+      String reason = 'camera_issue'}) async {
+    if (!_isInCall || !_isVideoCall || !_isVideoEnabled) return;
+    if (_engine == null) return;
+    if (_isRecoveringLocalVideo) return;
+    if (!force && _localVideoRecoveryAttempts >= 4) return;
+
+    _isRecoveringLocalVideo = true;
+    _localVideoRecoveryAttempts += 1;
+    _awaitingLocalVideoStart = true;
+
+    final int attempt = _localVideoRecoveryAttempts;
+    Loggers.warning(
+        'Attempting local video recovery (attempt $attempt, reason: $reason)');
+    _emitLocalVideoIssue(
+        'Camera unavailable. Retrying (attempt $attempt)...');
+
+    try {
+      await _engine!.enableVideo();
+      await _engine!.enableLocalVideo(true);
+
+      // Auto restart sequence so users do not need manual toggle/switch.
+      if (attempt >= 2) {
+        try {
+          await _engine!.muteLocalVideoStream(true);
+          await Future.delayed(
+              const Duration(milliseconds: 180));
+        } catch (_) {}
+      }
+
+      await _engine!.muteLocalVideoStream(false);
+      try {
+        await _engine!.startPreview();
+      } catch (_) {}
+
+      if (attempt >= 3) {
+        try {
+          // Flip once and flip back to kick camera pipeline
+          // while preserving original lens orientation.
+          await _engine!.switchCamera();
+          await Future.delayed(
+              const Duration(milliseconds: 220));
+          await _engine!.switchCamera();
+        } catch (_) {
+          // Some devices may not support camera switch in this state.
+        }
+      }
+
+      await Future.delayed(const Duration(seconds: 2));
+      if (_awaitingLocalVideoStart && attempt >= 4) {
+        _emitLocalVideoIssue(
+            'Camera unavailable. Close other camera apps and tap retry.');
+      }
+    } catch (e) {
+      Loggers.warning('Local video recovery failed: $e');
+      if (attempt >= 4) {
+        _emitLocalVideoIssue(
+            'Camera unavailable. Close other camera apps and tap retry.');
+      }
+    } finally {
+      _isRecoveringLocalVideo = false;
+    }
+  }
+
+  /// Manually retry local camera capture from UI.
+  Future<void> retryLocalVideoCapture() async {
+    _localVideoRecoveryAttempts = 0;
+    await _recoverLocalVideoCapture(
+      force: true,
+      reason: 'manual_retry',
+    );
   }
 
   bool _isLikelyNetworkIssue(Object error) {
@@ -278,7 +419,12 @@ class AgoraCallService {
           print('===============================');
           Loggers.info(
               'Local user ${connection.localUid} joined channel ${connection.channelId}');
+          _isHandlingTokenError = false;
           _emitConnectionState(true);
+          unawaited(_applySpeakerRouteAfterJoin());
+          if (_isVideoCall) {
+            unawaited(_scheduleLocalVideoStartupCheck());
+          }
         },
         onUserJoined: (RtcConnection connection,
             int remoteUid, int elapsed) {
@@ -332,7 +478,8 @@ class AgoraCallService {
             print(
                 '🔧 Engine Initialized: $_isEngineInitialized');
             print('===========================');
-            _handleTokenError();
+            unawaited(_handleTokenError(
+                context: 'Authentication Error'));
           } else {
             AgoraErrorHandler.handleError(normalizedCode,
                 context: 'Call Error');
@@ -354,9 +501,8 @@ class AgoraCallService {
             if (reason ==
                 ConnectionChangedReasonType
                     .connectionChangedInvalidToken) {
-              AgoraErrorHandler.handleError(-110,
-                  context: 'Connection Failed');
-              _handleTokenError();
+              unawaited(_handleTokenError(
+                  context: 'Connection Failed'));
               return;
             }
             print(
@@ -412,6 +558,35 @@ class AgoraCallService {
           print('===========================');
           Loggers.info(
               'Local audio: ${state.name} - ${reason.name}');
+        },
+        onLocalVideoStateChanged: (
+          VideoSourceType source,
+          LocalVideoStreamState state,
+          LocalVideoStreamReason reason,
+        ) {
+          final String stateName = state.name.toLowerCase();
+          final String reasonName =
+              reason.name.toLowerCase();
+          print('📷 === LOCAL VIDEO STATE ===');
+          print('📹 Source: ${source.name}');
+          print('🔊 State: ${state.name}');
+          print('❓ Reason: ${reason.name}');
+          print('===========================');
+          Loggers.info(
+              'Local video: ${state.name} - ${reason.name} (${source.name})');
+
+          if (_isLikelyLocalVideoActive(stateName)) {
+            _markLocalVideoHealthy();
+            return;
+          }
+
+          if (_isLikelyLocalVideoFailure(
+              stateName, reasonName)) {
+            _emitLocalVideoIssue(
+                'Camera unavailable. Retrying...');
+            unawaited(_recoverLocalVideoCapture(
+                reason: reason.name));
+          }
         },
         onRemoteAudioStateChanged:
             (RtcConnection connection,
@@ -490,16 +665,41 @@ class AgoraCallService {
     }
   }
 
+  Future<void> _applySpeakerRouteAfterJoin() async {
+    if (!_pendingSpeakerRouteApply && !_isInCall) return;
+    if (_engine == null) return;
+    if (!_isInCall) return;
+
+    for (int i = 0; i < 3; i++) {
+      try {
+        await Future.delayed(const Duration(milliseconds: 180));
+        await _engine!
+            .setEnableSpeakerphone(_isSpeakerEnabled);
+        _pendingSpeakerRouteApply = false;
+        Loggers.info(
+            'Speaker route applied after join: $_isSpeakerEnabled');
+        return;
+      } catch (e) {
+        if (i == 2) {
+          Loggers.warning(
+              'Unable to apply speaker route after join: $e');
+        }
+      }
+    }
+  }
+
   /// Start audio call with comprehensive error handling
   Future<bool> startAudioCall(
       {required String channelId, String? token}) async {
     try {
+      _hasHandledTokenErrorForAttempt = false;
       AgoraDebugHelper.debugPrint(
           '=== AUDIO CALL START ===',
           emoji: '🎵');
 
       // Check token requirements FIRST
-      bool tokenRequired = AgoraConfig.isTokenRequired();
+      bool tokenRequired =
+          AgoraConfig.isTokenMandatory();
       AgoraDebugHelper.debugPrint(
           'Token authentication required: $tokenRequired',
           emoji: '🔑');
@@ -512,15 +712,15 @@ class AgoraCallService {
                       .remainder(900000000) +
                   1;
 
-      // Generate token if none provided (must match uid)
-      String? finalToken = token;
-      if (finalToken == null) {
-        finalToken = AgoraConfig.generateTestToken(
-            channelId, finalUid);
-        AgoraDebugHelper.debugPrint(
-            'Generated token for uid $finalUid: ${finalToken ?? 'null (no token auth)'}',
-            emoji: '🎫');
-      }
+      // Resolve token from runtime payload or local config.
+      String? finalToken = AgoraConfig.resolveCallToken(
+        runtimeToken: token,
+        channelId: channelId,
+        uid: finalUid,
+      );
+      AgoraDebugHelper.debugPrint(
+          'Resolved token for uid $finalUid: ${finalToken ?? 'null'}',
+          emoji: '🎫');
       finalToken = finalToken?.trim();
       if (finalToken?.isEmpty ?? false) {
         finalToken = null;
@@ -533,7 +733,7 @@ class AgoraCallService {
             '❌ ERROR: Token authentication is required but no valid token available',
             emoji: '🚫');
         AgoraDebugHelper.debugPrint(
-            '💡 SOLUTION: Either disable token auth in Agora Console or configure app certificate',
+            '💡 SOLUTION: Provide RTC token from backend or disable Primary Certificate in Agora Console for testing',
             emoji: '💡');
         AgoraErrorHandler.handleError(-110,
             context:
@@ -595,6 +795,8 @@ class AgoraCallService {
           'Disabling video for audio call...',
           emoji: '📹');
       await _engine!.disableVideo();
+      _awaitingLocalVideoStart = false;
+      _emitLocalVideoIssue(null);
 
       // Configure channel options
       AgoraDebugHelper.debugPrint(
@@ -655,14 +857,16 @@ class AgoraCallService {
       AgoraDebugHelper.debugPrint('Enabling local audio...',
           emoji: '🔊');
       await _engine!.enableLocalAudio(true);
-      await _engine!.muteLocalAudioStream(false);
+      await _engine!.muteLocalAudioStream(_isMuted);
 
       // Set audio route - use earpiece for voice calls (like phone)
       // Speaker can be toggled later by user
       try {
         await _engine!
             .setEnableSpeakerphone(_isSpeakerEnabled);
+        _pendingSpeakerRouteApply = false;
       } catch (e) {
+        _pendingSpeakerRouteApply = true;
         Loggers.warning(
             'Unable to set initial speaker route: $e');
       }
@@ -720,12 +924,14 @@ class AgoraCallService {
   Future<bool> startVideoCall(
       {required String channelId, String? token}) async {
     try {
+      _hasHandledTokenErrorForAttempt = false;
       AgoraDebugHelper.debugPrint(
           '=== VIDEO CALL START ===',
           emoji: '📹');
 
       // Check token requirements FIRST
-      bool tokenRequired = AgoraConfig.isTokenRequired();
+      bool tokenRequired =
+          AgoraConfig.isTokenMandatory();
       AgoraDebugHelper.debugPrint(
           'Token authentication required: $tokenRequired',
           emoji: '🔑');
@@ -738,15 +944,15 @@ class AgoraCallService {
                       .remainder(900000000) +
                   1;
 
-      // Generate token if none provided (must match uid)
-      String? finalToken = token;
-      if (finalToken == null) {
-        finalToken = AgoraConfig.generateTestToken(
-            channelId, finalUid);
-        AgoraDebugHelper.debugPrint(
-            'Generated token for uid $finalUid: ${finalToken ?? 'null (no token auth)'}',
-            emoji: '🎫');
-      }
+      // Resolve token from runtime payload or local config.
+      String? finalToken = AgoraConfig.resolveCallToken(
+        runtimeToken: token,
+        channelId: channelId,
+        uid: finalUid,
+      );
+      AgoraDebugHelper.debugPrint(
+          'Resolved token for uid $finalUid: ${finalToken ?? 'null'}',
+          emoji: '🎫');
       finalToken = finalToken?.trim();
       if (finalToken?.isEmpty ?? false) {
         finalToken = null;
@@ -759,7 +965,7 @@ class AgoraCallService {
             '❌ ERROR: Token authentication is required but no valid token available',
             emoji: '🚫');
         AgoraDebugHelper.debugPrint(
-            '💡 SOLUTION: Either disable token auth in Agora Console or configure app certificate',
+            '💡 SOLUTION: Provide RTC token from backend or disable Primary Certificate in Agora Console for testing',
             emoji: '💡');
         AgoraErrorHandler.handleError(-110,
             context:
@@ -821,17 +1027,24 @@ class AgoraCallService {
       AgoraDebugHelper.debugPrint('Enabling video...',
           emoji: '📹');
       await _engine!.enableVideo();
+      _awaitingLocalVideoStart = true;
+      _localVideoRecoveryAttempts = 0;
+      _emitLocalVideoIssue('Starting camera...');
 
       AgoraDebugHelper.debugPrint(
           'Starting camera preview...',
           emoji: '🎬');
-      await _engine!.startPreview();
-
-      // Prefer speakerphone for video calls
       try {
-        await _engine!.setEnableSpeakerphone(true);
-        _isSpeakerEnabled = true;
-      } catch (_) {}
+        await _engine!.startPreview();
+      } catch (e) {
+        Loggers.warning(
+            'Camera preview start failed before join: $e');
+        _emitLocalVideoIssue(
+            'Camera unavailable. Retrying...');
+      }
+
+      // Prefer speakerphone for video calls.
+      _isSpeakerEnabled = true;
 
       // Configure channel options
       AgoraDebugHelper.debugPrint(
@@ -892,7 +1105,7 @@ class AgoraCallService {
           'Enabling local audio for video call...',
           emoji: '🔊');
       await _engine!.enableLocalAudio(true);
-      await _engine!.muteLocalAudioStream(false);
+      await _engine!.muteLocalAudioStream(_isMuted);
 
       // Enable local video
       await _engine!.enableLocalVideo(true);
@@ -902,7 +1115,9 @@ class AgoraCallService {
       try {
         await _engine!.setEnableSpeakerphone(true);
         _isSpeakerEnabled = true;
+        _pendingSpeakerRouteApply = false;
       } catch (e) {
+        _pendingSpeakerRouteApply = true;
         Loggers.warning(
             'Unable to force speakerphone for video call: $e');
       }
@@ -910,6 +1125,7 @@ class AgoraCallService {
       AgoraDebugHelper.debugPrint(
           'Audio and video configuration complete',
           emoji: '✅');
+      unawaited(_scheduleLocalVideoStartupCheck());
 
       AgoraDebugHelper.logCallState(
         isInCall: _isInCall,
@@ -974,16 +1190,18 @@ class AgoraCallService {
   /// Toggle mute state
   Future<void> toggleMute() async {
     try {
-      if (_engine != null && _isInCall) {
-        final bool nextState = !_isMuted;
+      final bool nextState = !_isMuted;
+      _isMuted = nextState;
+
+      if (_engine != null) {
         await _engine!
             .muteLocalAudioStream(nextState);
-        _isMuted = nextState;
-        Loggers.info(
-            'Microphone ${_isMuted ? 'muted' : 'unmuted'}');
       }
+      Loggers.info(
+          'Microphone ${_isMuted ? 'muted' : 'unmuted'}');
     } catch (e) {
-      Loggers.error('Error toggling mute: $e');
+      Loggers.warning(
+          'Unable to apply mute immediately, state queued: $e');
     }
   }
 
@@ -992,8 +1210,20 @@ class AgoraCallService {
     try {
       if (_engine != null && _isInCall && _isVideoCall) {
         final bool nextState = !_isVideoEnabled;
-        await _engine!
-            .muteLocalVideoStream(!nextState);
+        if (nextState) {
+          _awaitingLocalVideoStart = true;
+          _emitLocalVideoIssue('Starting camera...');
+          await _engine!.enableLocalVideo(true);
+          await _engine!.muteLocalVideoStream(false);
+          try {
+            await _engine!.startPreview();
+          } catch (_) {}
+          unawaited(_scheduleLocalVideoStartupCheck());
+        } else {
+          _awaitingLocalVideoStart = false;
+          _emitLocalVideoIssue(null);
+          await _engine!.muteLocalVideoStream(true);
+        }
         _isVideoEnabled = nextState;
         Loggers.info(
             'Video ${_isVideoEnabled ? 'enabled' : 'disabled'}');
@@ -1006,16 +1236,20 @@ class AgoraCallService {
   /// Toggle speaker
   Future<void> toggleSpeaker() async {
     try {
-      if (_engine != null && _isInCall) {
-        final bool nextState = !_isSpeakerEnabled;
+      final bool nextState = !_isSpeakerEnabled;
+      _isSpeakerEnabled = nextState;
+
+      if (_engine != null) {
         await _engine!
             .setEnableSpeakerphone(nextState);
-        _isSpeakerEnabled = nextState;
-        Loggers.info(
-            'Speaker ${_isSpeakerEnabled ? 'enabled' : 'disabled'}');
+        _pendingSpeakerRouteApply = false;
       }
+      Loggers.info(
+          'Speaker ${_isSpeakerEnabled ? 'enabled' : 'disabled'}');
     } catch (e) {
-      Loggers.error('Error toggling speaker: $e');
+      _pendingSpeakerRouteApply = true;
+      Loggers.warning(
+          'Unable to change speaker route immediately: $e');
     }
   }
 
@@ -1024,6 +1258,8 @@ class AgoraCallService {
     try {
       if (_engine != null && _isInCall && _isVideoCall) {
         await _engine!.switchCamera();
+        _awaitingLocalVideoStart = true;
+        unawaited(_scheduleLocalVideoStartupCheck());
         Loggers.info('Camera switched');
       }
     } catch (e) {
@@ -1054,7 +1290,8 @@ class AgoraCallService {
           color: Colors.red,
           child: Center(
               child: Text('Local Video Error: $e',
-                  style: TextStyle(color: Colors.white))),
+                  style:
+                      const TextStyle(color: Colors.white))),
         );
       }
     }
@@ -1090,7 +1327,8 @@ class AgoraCallService {
           color: Colors.blue,
           child: Center(
               child: Text('Remote Video Error: $e',
-                  style: TextStyle(color: Colors.white))),
+                  style:
+                      const TextStyle(color: Colors.white))),
         );
       }
     }
@@ -1106,33 +1344,48 @@ class AgoraCallService {
     _isMuted = false;
     _isVideoEnabled = true;
     _isSpeakerEnabled = true;
+    _pendingSpeakerRouteApply = false;
+    _isRecoveringLocalVideo = false;
+    _awaitingLocalVideoStart = false;
+    _localVideoRecoveryAttempts = 0;
     _remoteUid = null;
     _currentChannelId = null;
+    _emitLocalVideoIssue(null);
   }
 
   /// Handle token error (error 110)
-  void _handleTokenError() {
-    if (_isHandlingTokenError) {
+  Future<void> _handleTokenError(
+      {String context = 'Authentication Error'}) async {
+    if (_hasHandledTokenErrorForAttempt ||
+        _isHandlingTokenError) {
       return;
     }
+    _hasHandledTokenErrorForAttempt = true;
     _isHandlingTokenError = true;
     Loggers.error(
         'Token error detected - attempting to handle');
 
     // End current call if in progress
     if (_isInCall) {
-      endCall();
+      await endCall();
     }
 
     // Show specific error message for token issue
     AgoraErrorHandler.handleError(-110,
-        context: 'Authentication Error');
+        context: context);
 
     // Reset engine state to force reinitialization with new token
     _isEngineInitialized = false;
 
-    // Attempt to reinitialize the engine
-    _attemptTokenRecovery();
+    // Attempt to reinitialize only if a token is available.
+    if (AgoraConfig.hasConfiguredToken()) {
+      _attemptTokenRecovery();
+      return;
+    }
+    Loggers.warning(
+        'Skipping token recovery - no token configured');
+    _isHandlingTokenError = false;
+    return;
   }
 
   /// Attempt to recover from token error

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shortzz/common/config/agora_config.dart';
+import 'package:shortzz/common/manager/call_state_manager.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/screen/call_screen/call_screen.dart';
 
@@ -8,6 +9,7 @@ class IncomingCallScreen extends StatefulWidget {
   final String channelId;
   final bool isVideoCall;
   final String? token;
+  final String? callId;
   final User caller;
 
   const IncomingCallScreen({
@@ -16,6 +18,7 @@ class IncomingCallScreen extends StatefulWidget {
     required this.isVideoCall,
     required this.caller,
     this.token,
+    this.callId,
   });
 
   @override
@@ -74,7 +77,7 @@ class _IncomingCallScreenState
                                 BorderRadius.circular(30),
                           ),
                         ),
-                        onPressed: () => Get.back(),
+                        onPressed: _declineCall,
                         icon: const Icon(Icons.call_end,
                             size: 24),
                         label: const Text('Decline',
@@ -118,6 +121,10 @@ class _IncomingCallScreenState
   }
 
   Future<void> _acceptCall() async {
+    if (widget.callId?.isNotEmpty ?? false) {
+      await CallStateManager.instance.acceptCall(
+          widget.callId!);
+    }
     final effectiveChannel =
         AgoraConfig.effectiveChannelId(widget.channelId);
 
@@ -128,6 +135,16 @@ class _IncomingCallScreenState
           channelId: effectiveChannel,
           token: widget.token,
         ));
+  }
+
+  Future<void> _declineCall() async {
+    if (widget.callId?.isNotEmpty ?? false) {
+      await CallStateManager.instance.declineCall(
+        widget.callId!,
+        reason: 'user_declined',
+      );
+    }
+    Get.back();
   }
 
   Widget _buildAvatar() {

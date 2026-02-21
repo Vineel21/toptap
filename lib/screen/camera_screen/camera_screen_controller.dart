@@ -8,8 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:retrytech_plugin/retrytech_plugin.dart';
 import 'package:shortzz/common/controller/base_controller.dart';
 import 'package:shortzz/common/extensions/string_extension.dart';
 import 'package:shortzz/common/functions/media_picker_helper.dart';
@@ -50,7 +48,7 @@ class CameraScreenController extends BaseController
   Rx<SelectedMusic?> selectedMusic = Rx(null);
   RxDouble progress = 0.0.obs;
   RxBool isDeepARInitialized = false.obs;
-  RxBool useFallbackCamera = false.obs;
+  RxString deepArStatusMessage = ''.obs;
   bool _isDisposingCamera = false;
   bool _isDeepArBlockedDevice = false;
   String _deepArBlockReason = '';
@@ -64,9 +62,15 @@ class CameraScreenController extends BaseController
   late Rx<DeepARFilters> selectedEffect;
 
   bool get isDeepAr => appSetting?.isDeepAr == 1;
-  bool get _shouldUseDeepAr => isDeepAr && !_isDeepArBlockedDevice;
-  bool get isUsingDeepAr =>
-      _shouldUseDeepAr && useFallbackCamera.value == false;
+  bool get _hasDeepArLicenseForCurrentPlatform {
+    if (Platform.isIOS) {
+      return (appSetting?.deeparIOSKey?.trim().isNotEmpty ?? false);
+    }
+    return (appSetting?.deeparAndroidKey?.trim().isNotEmpty ?? false);
+  }
+
+  bool get _wantsDeepAr => true;
+  bool get isUsingDeepAr => true;
 
   List<DeepARFilters> get availableDeepArFilters {
     final Map<String, DeepARFilters> uniqueMap = {};
@@ -108,9 +112,7 @@ class CameraScreenController extends BaseController
     super.onInit();
     unawaited(_initialize());
     selectedEffect = Rx(deepArNoneEffect);
-    if (availableDeepArFilters.length > 1) {
-      isEffectShow.value = true;
-    }
+    isEffectShow.value = false;
   }
 
   @override
@@ -127,7 +129,7 @@ class CameraScreenController extends BaseController
   }
 
   Future<void> _detectDeepArCompatibility() async {
-    if (!isDeepAr || !Platform.isAndroid) return;
+    if (!_wantsDeepAr || !Platform.isAndroid) return;
 
     try {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
@@ -200,26 +202,24 @@ class CameraScreenController extends BaseController
   }
 
   Future<void> _initCamera() async {
-    Loggers.info('Initialize camera');
+    Loggers.info('Initialize camera (DeepAR only)');
     _deepArRecoveryAttempts = 0;
     _isRecoveringDeepAr = false;
-    if (_shouldUseDeepAr) {
-      useFallbackCamera.value = false;
-      await _initDeepArCamera();
-    } else {
-      if (isDeepAr) {
-        Loggers.warning(
-            'DeepAR disabled on this device for rendering stability. Falling back to standard camera.');
-      }
-      isDeepARInitialized.value = false;
-      useFallbackCamera.value = true;
-      Future.delayed(const Duration(milliseconds: 100), () {
-        RetrytechPlugin.shared.initCamera();
-      });
-    }
+    await _initDeepArCamera();
   }
 
   Future<void> _initDeepArCamera() async {
+    deepArStatusMessage.value = '';
+    isDeepARInitialized.value = false;
+
+    if (!_hasDeepArLicenseForCurrentPlatform) {
+      await _handleDeepArFailure(
+        reason: 'deepar_key_missing',
+        message: 'DeepAR license key missing for this platform.',
+      );
+      return;
+    }
+
     try {
       // Initialize DeepAR
       final initializeResult = await deepArControllerPlus.value.initialize(
@@ -229,8 +229,9 @@ class CameraScreenController extends BaseController
       if (!initializeResult.success) {
         Loggers.error(
             'DeepAR initialization failed: ${initializeResult.message}');
-        await _switchToFallbackCamera(
+        await _handleDeepArFailure(
           reason: 'deepar_init_failed',
+          message: initializeResult.message,
         );
         return;
       }
@@ -238,12 +239,15 @@ class CameraScreenController extends BaseController
       await deepArControllerPlus.value
           .switchEffectWithSlot(slot: 'effect', path: 'none');
       isDeepARInitialized.value = true;
+      isEffectShow.value = availableDeepArFilters.length > 1;
+      deepArStatusMessage.value = '';
       Loggers.info(
           'DeepAR session started successfully for key $_deepArDeviceKey');
     } catch (e) {
       Loggers.error('Error initializing AR: $e');
-      await _switchToFallbackCamera(
+      await _handleDeepArFailure(
         reason: 'deepar_init_exception',
+        message: '$e',
       );
     }
   }
@@ -269,12 +273,13 @@ class CameraScreenController extends BaseController
     required String reason,
     required String message,
   }) async {
-    if (!isUsingDeepAr || isClosed || useFallbackCamera.value) return;
+    if (!isUsingDeepAr || isClosed) return;
     if (_isRecoveringDeepAr) return;
 
     if (_deepArRecoveryAttempts >= _maxDeepArRecoveryAttempts) {
-      await _switchToFallbackCamera(
+      await _handleDeepArFailure(
         reason: 'deepar_health_$reason',
+        message: message,
       );
       return;
     }
@@ -291,43 +296,49 @@ class CameraScreenController extends BaseController
       await _initDeepArCamera();
     } catch (e) {
       Loggers.error('DeepAR recovery failed: $e');
-      await _switchToFallbackCamera(
+      await _handleDeepArFailure(
         reason: 'deepar_recovery_exception',
+        message: '$e',
       );
     } finally {
       _isRecoveringDeepAr = false;
     }
 
-    if (!isClosed &&
-        !useFallbackCamera.value &&
-        isDeepARInitialized.value == false) {
-      await _switchToFallbackCamera(
+    if (!isClosed && isDeepARInitialized.value == false) {
+      await _handleDeepArFailure(
         reason: 'deepar_recovery_failed',
+        message: 'DeepAR camera recovery failed.',
       );
     }
   }
 
-  Future<void> _switchToFallbackCamera({
+  Future<void> _handleDeepArFailure({
     required String reason,
+    String? message,
   }) async {
-    if (useFallbackCamera.value) return;
-
     _deepArHealthSubscription?.cancel();
     _deepArHealthSubscription = null;
     _isRecoveringDeepAr = false;
-    useFallbackCamera.value = true;
     isDeepARInitialized.value = false;
+    isEffectShow.value = false;
 
     try {
       await deepArControllerPlus.value.destroy();
     } catch (e) {
-      Loggers.warning('DeepAR destroy warning before fallback: $e');
+      Loggers.warning('DeepAR destroy warning: $e');
     }
 
     if (isClosed) return;
 
-    Loggers.warning('Switching to stable camera fallback (reason: $reason)');
-    RetrytechPlugin.shared.initCamera();
+    final resolvedMessage = (message?.trim().isNotEmpty ?? false)
+        ? message!.trim()
+        : 'DeepAR camera unavailable. Reason: $reason';
+    deepArStatusMessage.value = resolvedMessage;
+
+    Loggers.error('DeepAR failure ($reason): $resolvedMessage');
+    if (Get.isSnackbarOpen == false) {
+      showSnackBar(resolvedMessage);
+    }
   }
 
   // Cleanup methods
@@ -348,38 +359,13 @@ class CameraScreenController extends BaseController
     Loggers.info('Dispose camera');
     _deepArHealthSubscription?.cancel();
     _deepArHealthSubscription = null;
-    if (isUsingDeepAr) {
-      isDeepARInitialized.value = false;
-      try {
-        await deepArControllerPlus.value.destroy();
-      } catch (e) {
-        Loggers.warning('DeepAR destroy warning: $e');
-      }
-    } else {
-      try {
-        RetrytechPlugin.shared.disposeCamera;
-      } catch (e) {
-        Loggers.warning('Fallback camera dispose warning: $e');
-      }
+    isDeepARInitialized.value = false;
+    try {
+      await deepArControllerPlus.value.destroy();
+    } catch (e) {
+      Loggers.warning('DeepAR destroy warning: $e');
     }
     _isDisposingCamera = false;
-  }
-
-  // Permission handling
-  void showPermissionDeniedSheet() {
-    Get.bottomSheet(
-      ConfirmationSheet(
-        title: LKey.cameraMicrophonePermissionTitle.tr,
-        description: LKey.cameraMicrophonePermissionDescription
-            .trParams({'app_name': AppRes.appName}),
-        onTap: openAppSettings,
-        onClose: () => Get.back(),
-        positiveText: LKey.openSetting.tr,
-        isDismissible: true,
-      ),
-      enableDrag: false,
-      isDismissible: false,
-    );
   }
 
   // Media handling methods
@@ -448,41 +434,20 @@ class CameraScreenController extends BaseController
 
   // Camera control methods
   void onToggleFlash() {
-    if (isUsingDeepAr) {
-      deepArControllerPlus.value.toggleFlash();
-    } else {
-      RetrytechPlugin.shared.flashOnOff;
-      isTorchOn.toggle();
-    }
+    deepArControllerPlus.value.toggleFlash();
   }
 
   Future<void> onToggleCamera() async {
-    if (isUsingDeepAr) {
-      deepArControllerPlus.value.flipCamera();
-    } else {
-      if (isTorchOn.value) {
-        isTorchOn.value = false;
-        RetrytechPlugin.shared.flashOnOff;
-      }
-      RetrytechPlugin.shared.toggleCamera;
-    }
+    deepArControllerPlus.value.flipCamera();
   }
 
   // Video recording methods
   Future<void> onVideoRecordingStart() async {
-    if (isUsingDeepAr) {
-      if (isDeepARInitialized.value == false) {
-        return;
-      }
-    }
+    if (isDeepARInitialized.value == false) return;
     if (isRecording.value) return;
 
     try {
-      if (isUsingDeepAr) {
-        await deepArControllerPlus.value.startVideoRecording();
-      } else {
-        RetrytechPlugin.shared.startRecording;
-      }
+      await deepArControllerPlus.value.startVideoRecording();
       _startAudioPlayback();
       isRecording.value = true;
       isStartingRecording.value = true;
@@ -494,8 +459,7 @@ class CameraScreenController extends BaseController
 
   Future<void> onVideoRecordingPause() async {
     if (!isRecording.value) return;
-
-    RetrytechPlugin.shared.pauseRecording;
+    if (!isUsingDeepAr) return;
     _pauseAudioPlayback();
     isRecording.value = false;
     _progressTimer?.cancel();
@@ -503,19 +467,14 @@ class CameraScreenController extends BaseController
 
   Future<void> onVideoRecordingResume() async {
     if (isRecording.value) return;
-
-    RetrytechPlugin.shared.resumeRecording;
+    if (!isUsingDeepAr) return;
     _resumeAudioPlayback();
     isRecording.value = true;
     _startProgressTimer();
   }
 
   Future<void> onVideoRecordingStop() async {
-    if (isUsingDeepAr) {
-      if (isDeepARInitialized.value == false) {
-        return;
-      }
-    }
+    if (isDeepARInitialized.value == false) return;
 
     if (!isStartingRecording.value) return;
 
@@ -529,17 +488,8 @@ class CameraScreenController extends BaseController
       progress.value = 0;
 
       showLoader();
-      if (isUsingDeepAr) {
-        final File _file =
-            await deepArControllerPlus.value.stopVideoRecording();
-        file = XFile(_file.path);
-      } else {
-        final String? videoPath = await RetrytechPlugin.shared.stopRecording;
-        if (videoPath == null) {
-          return showSnackBar('Capture File not found');
-        }
-        file = XFile(videoPath);
-      }
+      final File _file = await deepArControllerPlus.value.stopVideoRecording();
+      file = XFile(_file.path);
       final XFile thumbnailPath =
           await MediaPickerHelper.shared.extractThumbnail(videoPath: file.path);
       MediaFile mediaFile = MediaFile(
@@ -617,35 +567,17 @@ class CameraScreenController extends BaseController
     if (!isStartingRecording.value) {
       onVideoRecordingStart();
     } else {
-      if (isUsingDeepAr) {
-        onVideoRecordingStop();
-      } else {
-        if (isRecording.value) {
-          onVideoRecordingPause();
-        } else {
-          onVideoRecordingResume();
-        }
-      }
+      onVideoRecordingStop();
     }
   }
 
   Future<void> capturePhoto() async {
-    if (isUsingDeepAr) {
-      if (isDeepARInitialized.value == false) {
-        return;
-      }
-    }
+    if (isDeepARInitialized.value == false) return;
     if (isRecording.value) return;
 
     try {
-      XFile file;
-      if (isUsingDeepAr) {
-        File photo = await deepArControllerPlus.value.takeScreenshot();
-        print(photo.path);
-        file = XFile(photo.path);
-      } else {
-        file = XFile(await RetrytechPlugin.shared.captureImage() ?? '');
-      }
+      File photo = await deepArControllerPlus.value.takeScreenshot();
+      XFile file = XFile(photo.path);
       await handleImageStory(
           MediaFile(file: file, type: MediaType.image, thumbNail: file));
     } catch (e) {
@@ -705,6 +637,9 @@ class CameraScreenController extends BaseController
   }
 
   void onEffectToggle() {
+    if (!isUsingDeepAr || !isDeepARInitialized.value) {
+      return;
+    }
     isEffectShow.toggle();
   }
 
@@ -721,11 +656,7 @@ class CameraScreenController extends BaseController
 
   Future<void> navigateCameraEditScreen(PostStoryContent content) async {
     await disposeCamera();
-    if (isUsingDeepAr) {
-      await Get.off(() => CameraEditScreen(content: content));
-    } else {
-      await Get.to(() => CameraEditScreen(content: content));
-    }
+    await Get.off(() => CameraEditScreen(content: content));
     _resetAll();
   }
 
@@ -757,6 +688,10 @@ class CameraScreenController extends BaseController
   }
 
   Future<void> applyARFilterEffect(DeepARFilters effect) async {
+    if (!isUsingDeepAr || !isDeepARInitialized.value) {
+      return;
+    }
+
     selectedEffect.value = effect;
 
     bool loaderShown = false;

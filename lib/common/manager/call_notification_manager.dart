@@ -18,10 +18,8 @@ class CallNotificationManager {
   static final CallNotificationManager instance =
       CallNotificationManager._();
 
-  // Notification plugin instance
-  final FlutterLocalNotificationsPlugin
-      _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  // Notification plugin instance (injected from FirebaseNotificationManager)
+  FlutterLocalNotificationsPlugin? _notificationPlugin;
 
   // Call state management
   final Rx<CallNotificationState> _currentState =
@@ -43,6 +41,18 @@ class CallNotificationManager {
   bool get hasActiveIncomingCall =>
       _activeIncomingCalls.isNotEmpty;
   bool get isInitialized => _isInitialized;
+
+  FlutterLocalNotificationsPlugin
+      get _notificationsPlugin {
+    _notificationPlugin ??=
+        FlutterLocalNotificationsPlugin();
+    return _notificationPlugin!;
+  }
+
+  void configureNotificationPlugin(
+      FlutterLocalNotificationsPlugin plugin) {
+    _notificationPlugin = plugin;
+  }
 
   /// Initialize the call notification manager
   Future<void> initialize() async {
@@ -70,6 +80,9 @@ class CallNotificationManager {
 
   /// Initialize notification plugin with proper settings
   Future<void> _initializeNotifications() async {
+    if (_notificationPlugin != null) {
+      return;
+    }
     // Android initialization
     const androidInitializationSettings =
         AndroidInitializationSettings(
@@ -88,19 +101,14 @@ class CallNotificationManager {
       iOS: iosInitializationSettings,
     );
 
-    await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse:
-          _onNotificationTapped,
-      onDidReceiveBackgroundNotificationResponse:
-          _onBackgroundNotificationTapped,
-    );
+    await _notificationsPlugin
+        .initialize(initializationSettings);
   }
 
   /// Create notification channels for different call types
   Future<void> _createNotificationChannels() async {
     // Incoming call channel (high priority)
-    final incomingCallChannel = AndroidNotificationChannel(
+    const incomingCallChannel = AndroidNotificationChannel(
       'incoming_call_channel',
       'Incoming Calls',
       description:
@@ -114,7 +122,7 @@ class CallNotificationManager {
     );
 
     // Call in progress channel
-    final activeCallChannel = AndroidNotificationChannel(
+    const activeCallChannel = AndroidNotificationChannel(
       'active_call_channel',
       'Active Calls',
       description: 'Notifications for ongoing calls',
@@ -125,12 +133,12 @@ class CallNotificationManager {
     );
 
     // Register channels
-    await _flutterLocalNotificationsPlugin
+    await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(incomingCallChannel);
 
-    await _flutterLocalNotificationsPlugin
+    await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(activeCallChannel);
@@ -180,6 +188,15 @@ class CallNotificationManager {
       // Enable wake lock to keep screen on
       await WakelockPlus.enable();
 
+      // Set timeout timer before any awaited navigation/UI work.
+      _callTimeoutTimer?.cancel();
+      _callTimeoutTimer = Timer(timeout, () async {
+        Loggers.info('📞 Call timeout for $callId');
+        await CallStateManager.instance
+            .missCall(callId, reason: 'timeout');
+        declineCall(callId, reason: 'timeout');
+      });
+
       // Start ringtone
       await _startRingtone();
 
@@ -189,17 +206,8 @@ class CallNotificationManager {
       // Show enhanced incoming call screen if app is in foreground
       if (WidgetsBinding.instance.lifecycleState ==
           AppLifecycleState.resumed) {
-        await _showIncomingCallScreen(callData);
+        unawaited(_showIncomingCallScreen(callData));
       }
-
-      // Set timeout timer
-      _callTimeoutTimer?.cancel();
-      _callTimeoutTimer = Timer(timeout, () async {
-        Loggers.info('📞 Call timeout for $callId');
-        await CallStateManager.instance
-            .missCall(callId, reason: 'timeout');
-        declineCall(callId, reason: 'timeout');
-      });
     } catch (e) {
       Loggers.error('📞 ❌ Error showing incoming call: $e');
     }
@@ -245,7 +253,7 @@ class CallNotificationManager {
         colorized: true,
         color: isVideo ? Colors.blue : Colors.green,
         largeIcon: caller.profilePhoto?.isNotEmpty == true
-            ? DrawableResourceAndroidBitmap(
+            ? const DrawableResourceAndroidBitmap(
                 '@mipmap/ic_launcher')
             : const DrawableResourceAndroidBitmap(
                 '@mipmap/ic_launcher'),
@@ -277,7 +285,7 @@ class CallNotificationManager {
         interruptionLevel: InterruptionLevel.critical,
       );
 
-      await _flutterLocalNotificationsPlugin.show(
+      await _notificationsPlugin.show(
         callData.callId.hashCode,
         caller.fullname ?? 'Incoming Call',
         isVideo
@@ -428,7 +436,7 @@ class CallNotificationManager {
       _activeIncomingCalls.remove(callId);
 
       // Cancel notification
-      await _flutterLocalNotificationsPlugin
+      await _notificationsPlugin
           .cancel(callId.hashCode);
 
       // Cancel timers
@@ -447,18 +455,10 @@ class CallNotificationManager {
     }
   }
 
-  /// Handle notification tap
-  void _onNotificationTapped(
-      NotificationResponse response) {
-    _handleNotificationAction(
-        response.payload, response.actionId);
-  }
-
-  /// Handle background notification tap
-  static void _onBackgroundNotificationTapped(
-      NotificationResponse response) {
-    instance._handleNotificationAction(
-        response.payload, response.actionId);
+  /// Public bridge for action handling from FirebaseNotificationManager.
+  void handleNotificationActionPayload(
+      String? payload, String? actionId) {
+    _handleNotificationAction(payload, actionId);
   }
 
   /// Handle notification actions (Accept/Decline)

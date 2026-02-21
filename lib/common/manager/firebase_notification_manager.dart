@@ -21,8 +21,8 @@ import 'package:shortzz/model/livestream/livestream.dart';
 import 'package:shortzz/model/post_story/post_model.dart';
 import 'package:shortzz/screen/chat_screen/chat_screen.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
-import 'package:shortzz/screen/call_screen/incoming_call_screen.dart';
 import 'package:shortzz/screen/chat_screen/chat_screen_controller.dart';
+import 'package:shortzz/screen/call_screen/incoming_call_screen.dart';
 import 'package:shortzz/screen/dashboard_screen/dashboard_screen_controller.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/audience/live_stream_audience_screen.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/host/livestream_host_screen.dart';
@@ -36,6 +36,20 @@ void notificationTapBackground(
     NotificationResponse notificationResponse) {
   print('NOTIFICATION TAP ON BACKGROUND');
   if (notificationResponse.payload != null) {
+    if (notificationResponse.actionId
+            ?.startsWith('ACCEPT_CALL_') ==
+        true ||
+        notificationResponse.actionId
+                ?.startsWith('DECLINE_CALL_') ==
+            true) {
+      CallNotificationManager.instance
+          .handleNotificationActionPayload(
+        notificationResponse.payload!,
+        notificationResponse.actionId,
+      );
+      return;
+    }
+
     // Handle call actions from background notifications
     if (notificationResponse.actionId == 'ACCEPT_CALL') {
       FirebaseNotificationManager.instance
@@ -141,6 +155,20 @@ class FirebaseNotificationManager {
       final payload = response.payload;
       if (payload == null) return;
 
+      if (response.actionId
+              ?.startsWith('ACCEPT_CALL_') ==
+          true ||
+          response.actionId
+                  ?.startsWith('DECLINE_CALL_') ==
+              true) {
+        CallNotificationManager.instance
+            .handleNotificationActionPayload(
+          payload,
+          response.actionId,
+        );
+        return;
+      }
+
       // Handle accept/decline actions for call notifications
       if (response.actionId == 'ACCEPT_CALL') {
         Loggers.info('📞 Call ACCEPTED from notification');
@@ -159,6 +187,10 @@ class FirebaseNotificationManager {
     },
             onDidReceiveBackgroundNotificationResponse:
                 notificationTapBackground);
+
+    CallNotificationManager.instance
+        .configureNotificationPlugin(
+            flutterLocalNotificationsPlugin);
 
     FirebaseMessaging.onMessage
         .listen((RemoteMessage message) async {
@@ -359,7 +391,10 @@ class FirebaseNotificationManager {
     }
 
     print('📞 Call accepted from notification');
-    await _handleIncomingCallNotification(dataString);
+    await _handleIncomingCallNotification(
+      dataString,
+      callId: message.messageId,
+    );
   }
 
   Future<void> handleNotification(String payload) async {
@@ -381,7 +416,10 @@ class FirebaseNotificationManager {
         await _handleChatNotification(dataString);
         break;
       case 'call':
-        await _handleIncomingCallNotification(dataString);
+        await _handleIncomingCallNotification(
+          dataString,
+          callId: message.messageId,
+        );
         break;
       case 'post':
         await _handlePostNotification(
@@ -402,26 +440,39 @@ class FirebaseNotificationManager {
   }
 
   Future<void> _handleIncomingCallNotification(
-      String data) async {
+    String data, {
+    String? callId,
+  }) async {
     try {
       final map = jsonDecode(data) as Map<String, dynamic>;
       final String channelId = map['channelId'] ?? '';
       final bool isVideo = (map['isVideo'] ?? 0) == 1 ||
           map['isVideo'] == true;
       final String? token = map['token'];
+      final String? payloadCallId =
+          map['callId']?.toString();
       final callerMap =
           map['caller'] as Map<String, dynamic>?;
 
       if (channelId.isEmpty || callerMap == null) return;
 
       final caller = User.fromJson(callerMap);
+      final resolvedCallId = payloadCallId ??
+          callId ??
+          '${DateTime.now().millisecondsSinceEpoch}';
 
-      await Get.to(() => IncomingCallScreen(
-            channelId: channelId,
-            isVideoCall: isVideo,
-            token: token,
-            caller: caller,
-          ));
+      if (!CallNotificationManager.instance.isInitialized) {
+        await CallNotificationManager.instance.initialize();
+      }
+
+      await CallNotificationManager.instance.showIncomingCall(
+        callId: resolvedCallId,
+        caller: caller,
+        channelId: channelId,
+        isVideoCall: isVideo,
+        token: token,
+        timeout: const Duration(seconds: 45),
+      );
     } catch (e) {
       Loggers.error(
           'Failed to handle call notification: $e');
@@ -448,6 +499,8 @@ class FirebaseNotificationManager {
       final bool isVideo = (map['isVideo'] ?? 0) == 1 ||
           map['isVideo'] == true;
       final String? token = map['token'];
+      final String? payloadCallId =
+          map['callId']?.toString();
       final callerMap =
           map['caller'] as Map<String, dynamic>?;
 
@@ -458,7 +511,8 @@ class FirebaseNotificationManager {
       }
 
       final caller = User.fromJson(callerMap);
-      final callId = message.messageId ??
+      final callId = payloadCallId ??
+          message.messageId ??
           '${DateTime.now().millisecondsSinceEpoch}';
 
       Loggers.info(
@@ -485,7 +539,10 @@ class FirebaseNotificationManager {
       // Fallback to original method
       final data = message.data['notification_data'] ?? '';
       if (data.isNotEmpty) {
-        await _handleIncomingCallNotification(data);
+        await _handleIncomingCallNotification(
+          data,
+          callId: message.messageId,
+        );
       }
     }
   }

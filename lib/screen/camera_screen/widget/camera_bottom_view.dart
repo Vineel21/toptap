@@ -14,8 +14,7 @@ import 'package:shortzz/utilities/theme_res.dart';
 class CameraBottomView extends StatelessWidget {
   final CameraScreenType cameraType;
 
-  const CameraBottomView(
-      {super.key, required this.cameraType});
+  const CameraBottomView({super.key, required this.cameraType});
 
   @override
   Widget build(BuildContext context) {
@@ -34,17 +33,14 @@ class CameraBottomView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 20.0),
           child: Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               // Gallery button
               CustomBorderRoundIcon(
-                  image: AssetRes.icImage,
-                  onTap: controller.onMediaTap),
+                  image: AssetRes.icImage, onTap: controller.onMediaTap),
 
               // Recording control button
-              RecordingControlButton(
-                  controller: controller),
+              RecordingControlButton(controller: controller),
 
               // Stop recording button
               _buildStopRecordingButton(controller),
@@ -56,22 +52,21 @@ class CameraBottomView extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterEffectViews(
-      CameraScreenController controller) {
+  Widget _buildFilterEffectViews(CameraScreenController controller) {
     return Obx(() {
-      if (controller.isEffectShow.value) {
+      if (controller.isUsingDeepAr &&
+          controller.isDeepARInitialized.value &&
+          controller.isEffectShow.value) {
         return _EffectList(controller);
       }
       return const SizedBox();
     });
   }
 
-  Widget _buildStopRecordingButton(
-      CameraScreenController controller) {
+  Widget _buildStopRecordingButton(CameraScreenController controller) {
     return Obx(() {
       final showStopButton =
-          !controller.isRecording.value &&
-              controller.isStartingRecording.value;
+          !controller.isRecording.value && controller.isStartingRecording.value;
       return Visibility(
         visible: showStopButton,
         replacement: const SizedBox(width: 37),
@@ -91,8 +86,7 @@ class _EffectList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<DeepARFilters> deepARFilters =
-        controller.availableDeepArFilters;
+    final List<DeepARFilters> deepARFilters = controller.availableDeepArFilters;
     return SizedBox(
       height: 89,
       child: ListView.builder(
@@ -102,26 +96,22 @@ class _EffectList extends StatelessWidget {
           DeepARFilters effect = deepARFilters[index];
 
           return InkWell(
-            onTap: () =>
-                controller.applyARFilterEffect(effect),
+            onTap: () => controller.applyARFilterEffect(effect),
             child: Obx(() {
               final selected = controller.selectedEffect.value;
               final isSelected = (selected.id != null &&
                       effect.id != null &&
                       selected.id == effect.id) ||
                   (selected.filterFile != null &&
-                      selected.filterFile ==
-                          effect.filterFile);
-              final borderColor = whitePure(context)
-                  .withAlpha(isSelected ? 255 : 76);
+                      selected.filterFile == effect.filterFile);
+              final borderColor =
+                  whitePure(context).withAlpha(isSelected ? 255 : 76);
               return Container(
-                margin: const EdgeInsets.symmetric(
-                    horizontal: 10),
+                margin: const EdgeInsets.symmetric(horizontal: 10),
                 width: 79,
                 height: 89,
                 child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Filter thumbnail
                     Container(
@@ -129,8 +119,7 @@ class _EffectList extends StatelessWidget {
                       width: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: borderColor, width: 2),
+                        border: Border.all(color: borderColor, width: 2),
                       ),
                       padding: const EdgeInsets.all(3),
                       child: Container(
@@ -139,15 +128,11 @@ class _EffectList extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: ClipSmoothRect(
-                          radius: SmoothBorderRadius(
-                              cornerRadius: 30),
+                          radius: SmoothBorderRadius(cornerRadius: 30),
                           child: effect.id == -1
-                              ? Image.asset(
-                                  effect.image ?? '',
-                                  height: 36,
-                                  width: 36)
-                              : _EffectThumbnail(
-                                  imagePath: effect.image),
+                              ? Image.asset(effect.image ?? '',
+                                  height: 36, width: 36)
+                              : _EffectThumbnail(imagePath: effect.image),
                         ),
                       ),
                     ),
@@ -181,22 +166,19 @@ class _RecordingDurationSelector extends StatelessWidget {
     final controller = Get.find<CameraScreenController>();
 
     return Obx(() {
-      final showSelector =
-          !controller.isStartingRecording.value &&
-              controller.isSecondListShow.value;
+      final showSelector = !controller.isStartingRecording.value &&
+          controller.isSecondListShow.value;
 
       if (!showSelector) return const SizedBox();
 
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Padding(
-          padding: const EdgeInsets.only(
-              left: 5, right: 5, top: 20),
+          padding: const EdgeInsets.only(left: 5, right: 5, top: 20),
           child: Row(
             children: List.generate(
               controller.secondsList.length,
-              (index) => _buildDurationItem(
-                  context, controller, index),
+              (index) => _buildDurationItem(context, controller, index),
             ),
           ),
         ),
@@ -204,19 +186,17 @@ class _RecordingDurationSelector extends StatelessWidget {
     });
   }
 
-  Widget _buildDurationItem(BuildContext context,
-      CameraScreenController controller, int index) {
+  Widget _buildDurationItem(
+      BuildContext context, CameraScreenController controller, int index) {
     final second = controller.secondsList[index];
 
     return Obx(() {
-      final isSelected =
-          second == controller.selectedSecond.value;
+      final isSelected = second == controller.selectedSecond.value;
       final textStyle = TextStyleCustom.outFitRegular400(
           color: whitePure(context), fontSize: 15);
 
       return InkWell(
-        onTap: () =>
-            controller.selectedSecond.value = second,
+        onTap: () => controller.selectedSecond.value = second,
         child: Container(
           height: 29,
           width: 60,
@@ -224,18 +204,13 @@ class _RecordingDurationSelector extends StatelessWidget {
               ? ShapeDecoration(
                   color: whitePure(context).withAlpha(51),
                   shape: SmoothRectangleBorder(
-                    borderRadius: SmoothBorderRadius(
-                        cornerRadius: 30),
+                    borderRadius: SmoothBorderRadius(cornerRadius: 30),
                     side: BorderSide(
-                        color: whitePure(context)
-                            .withAlpha(128),
-                        width: 0.5),
+                        color: whitePure(context).withAlpha(128), width: 0.5),
                   ))
               : null,
           alignment: Alignment.center,
-          child: Text(
-              _formatDurationLabel(second),
-              style: textStyle),
+          child: Text(_formatDurationLabel(second), style: textStyle),
         ),
       );
     });
@@ -272,17 +247,15 @@ class _EffectThumbnail extends StatelessWidget {
     }
 
     final uri = Uri.tryParse(imagePath!);
-    final url =
-        (uri != null && uri.hasScheme && uri.host.isNotEmpty)
-            ? imagePath!
-            : imagePath!.addBaseURL();
+    final url = (uri != null && uri.hasScheme && uri.host.isNotEmpty)
+        ? imagePath!
+        : imagePath!.addBaseURL();
 
     return Image.network(
       url,
       height: 36,
       width: 36,
-      errorBuilder: (_, __, ___) =>
-          Image.asset(AssetRes.icNoFilter),
+      errorBuilder: (_, __, ___) => Image.asset(AssetRes.icNoFilter),
     );
   }
 
@@ -293,8 +266,7 @@ class _EffectThumbnail extends StatelessWidget {
 class RecordingControlButton extends StatelessWidget {
   final CameraScreenController controller;
 
-  const RecordingControlButton(
-      {super.key, required this.controller});
+  const RecordingControlButton({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -304,14 +276,11 @@ class RecordingControlButton extends StatelessWidget {
         height: 70,
         child: GestureDetector(
           onTap: controller.onPlayPauseToggle,
-          onLongPressStart: (_) =>
-              controller.onPlayPauseToggle(type: 1),
-          onLongPressEnd: (_) =>
-              controller.onPlayPauseToggle(type: 2),
+          onLongPressStart: (_) => controller.onPlayPauseToggle(type: 1),
+          onLongPressEnd: (_) => controller.onPlayPauseToggle(type: 2),
           child: CustomPaint(
             painter: DashedCirclePainter(
-                controller.progress /
-                    controller.selectedSecond.value),
+                controller.progress / controller.selectedSecond.value),
             child: Center(
               child: controller.isRecording.value
                   ? _buildStopIndicator(context)
@@ -330,8 +299,8 @@ class RecordingControlButton extends StatelessWidget {
       decoration: ShapeDecoration(
         color: whitePure(context),
         shape: SmoothRectangleBorder(
-          borderRadius: SmoothBorderRadius(
-              cornerRadius: 4, cornerSmoothing: 0.6),
+          borderRadius:
+              SmoothBorderRadius(cornerRadius: 4, cornerSmoothing: 0.6),
         ),
       ),
     );

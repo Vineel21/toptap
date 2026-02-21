@@ -504,11 +504,6 @@ class _EnhancedIncomingCallScreenState
       // Accept call through notification manager
       await CallNotificationManager.instance
           .acceptCall(widget.callData.callId);
-
-      // Close this screen
-      if (mounted) {
-        Get.back();
-      }
     } catch (e) {
       Loggers.error('📞 ❌ Error accepting call: $e');
 

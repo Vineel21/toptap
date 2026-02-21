@@ -1,4 +1,10 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    - third_party/**
+    - "**/build/**"
+    - "**/.dart_tool/**"
+
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

@@ -23,10 +23,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import ai.deepar.ar.CameraResolutionPreset;
@@ -47,7 +49,7 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
     }
 
     interface DestroyListener {
-        void onDestroyed();
+        void onDestroyed(DeepAR destroyedDeepARInstance);
     }
 
     SafeCameraXHandler(
@@ -55,6 +57,7 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
             long textureId,
             DeepAR deepAR,
             CameraResolutionPreset cameraResolutionPreset,
+            Executor renderExecutor,
             HealthEventListener healthEventListener,
             DestroyListener destroyListener
     ) {
@@ -62,6 +65,7 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
         this.deepAR = deepAR;
         this.textureId = textureId;
         this.resolutionPreset = cameraResolutionPreset;
+        this.renderExecutor = renderExecutor;
         this.healthEventListener = healthEventListener;
         this.destroyListener = destroyListener;
     }
@@ -78,6 +82,7 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
     private androidx.camera.core.Camera camera;
     private ImageAnalysis imageAnalysisUseCase;
     private final ExecutorService analysisExecutor = Executors.newSingleThreadExecutor();
+    private final Executor renderExecutor;
     private byte[] tempFrameData = new byte[0];
     private final HealthEventListener healthEventListener;
     private final DestroyListener destroyListener;
@@ -302,19 +307,20 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
                         frameBuffer.flip();
 
                         if (deepAR != null && !isDestroyed.get()) {
-                            try {
-                                deepAR.receiveFrame(
-                                        frameBuffer,
-                                        frameWidth,
-                                        frameHeight,
-                                        image.getImageInfo().getRotationDegrees(),
-                                        lensFacing == CameraSelector.LENS_FACING_FRONT,
-                                        DeepARImageFormat.YUV_420_888,
-                                        1
-                                );
-                            } catch (Exception e) {
-                                failureReason = "receive_frame_error";
-                                failureMessage = "DeepAR.receiveFrame failed: " + e.getMessage();
+                            final String receiveError = deliverFrameOnRenderThread(
+                                    frameBuffer,
+                                    frameWidth,
+                                    frameHeight,
+                                    image.getImageInfo().getRotationDegrees(),
+                                    1
+                            );
+                            if (receiveError != null) {
+                                if (receiveError.toLowerCase().contains("timed out")) {
+                                    delivered = true;
+                                } else {
+                                    failureReason = "receive_frame_error";
+                                    failureMessage = "DeepAR.receiveFrame failed: " + receiveError;
+                                }
                             }
                         }
                         if ("receive_frame_error".equals(failureReason) == false) {
@@ -464,20 +470,79 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
 
             if (deepAR != null && !isDestroyed.get()) {
                 final int pixelStride = Math.max(planes[1].getPixelStride(), 1);
-                deepAR.receiveFrame(
+                final String receiveError = deliverFrameOnRenderThread(
                         frameBuffer,
                         frameWidth,
                         frameHeight,
                         image.getImageInfo().getRotationDegrees(),
-                        lensFacing == CameraSelector.LENS_FACING_FRONT,
-                        DeepARImageFormat.YUV_420_888,
                         pixelStride
                 );
+                if (receiveError != null) {
+                    if (receiveError.toLowerCase().contains("timed out")) {
+                        return true;
+                    }
+                    return false;
+                }
             }
             return true;
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private String deliverFrameOnRenderThread(
+            ByteBuffer frameBuffer,
+            int frameWidth,
+            int frameHeight,
+            int rotationDegrees,
+            int pixelStride
+    ) {
+        if (renderExecutor == null) {
+            return "DeepAR render executor unavailable";
+        }
+        if (deepAR == null || isDestroyed.get()) {
+            return "DeepAR instance unavailable";
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final String[] errorHolder = new String[1];
+
+        try {
+            renderExecutor.execute(() -> {
+                try {
+                    if (deepAR == null || isDestroyed.get()) {
+                        errorHolder[0] = "DeepAR instance unavailable";
+                        return;
+                    }
+                    deepAR.receiveFrame(
+                            frameBuffer,
+                            frameWidth,
+                            frameHeight,
+                            rotationDegrees,
+                            lensFacing == CameraSelector.LENS_FACING_FRONT,
+                            DeepARImageFormat.YUV_420_888,
+                            pixelStride
+                    );
+                } catch (Exception e) {
+                    errorHolder[0] = e.getMessage();
+                } finally {
+                    latch.countDown();
+                }
+            });
+        } catch (Exception e) {
+            return "Failed to schedule render-thread frame delivery: " + e.getMessage();
+        }
+
+        try {
+            if (!latch.await(400, TimeUnit.MILLISECONDS)) {
+                return "Render-thread frame delivery timed out";
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "Render-thread frame delivery interrupted";
+        }
+
+        return errorHolder[0];
     }
 
     public void destroy() {
@@ -494,6 +559,7 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
                 analysisExecutor.shutdownNow();
             }
 
+            final DeepAR destroyedDeepAR = deepAR;
             deepAR = null;
             tempFrameData = new byte[0];
 
@@ -506,7 +572,7 @@ public class SafeCameraXHandler implements MethodChannel.MethodCallHandler {
 
             Log.d(TAG, "SafeCameraXHandler destroyed successfully");
             if (destroyListener != null) {
-                destroyListener.onDestroyed();
+                destroyListener.onDestroyed(destroyedDeepAR);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error during destroy", e);

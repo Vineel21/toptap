@@ -48,7 +48,7 @@ class NotificationService {
     }
   }
 
-  Future pushNotification(
+  Future<bool> pushNotification(
       {required NotificationType type,
       required String title,
       required String body,
@@ -101,8 +101,32 @@ class NotificationService {
           },
           body: json.encode(inputData));
       Loggers.success('Notification response : ${response.body}');
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        Loggers.error(
+            'Notification push failed with status: ${response.statusCode}');
+        return false;
+      }
+
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final result = decoded['result'];
+          if (result == true) {
+            return true;
+          }
+          Loggers.error(
+              'Notification push API returned unsuccessful result: $result');
+          return false;
+        }
+      } catch (_) {
+        // Some environments may return non-JSON content; treat HTTP success as success.
+        return true;
+      }
+
+      return true;
     } catch (e) {
       Loggers.error(e);
+      return false;
     }
   }
 }

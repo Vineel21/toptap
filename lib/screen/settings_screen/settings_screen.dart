@@ -159,10 +159,10 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ), */
 
-                  SettingLabel(
-                    title: "Development & Testing"
-                        .toUpperCase(),
-                  ),
+                  // SettingLabel(
+                  //   title: "Development & Testing"
+                  //       .toUpperCase(),
+                  // ),
                   // AR Filters (backup location) - DISABLED (removed TopTap SDK)
                   /* SettingIconTextWithArrow(
                     icon: AssetRes.iccameraicon,

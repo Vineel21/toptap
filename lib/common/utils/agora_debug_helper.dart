@@ -200,8 +200,9 @@ class AgoraDebugHelper {
           'Token Valid: ${requirements['valid_token']} (Length: ${token.length})');
     } else {
       requirements['valid_token'] =
-          true; // No token is valid for testing
-      debugPrint('No token provided (OK for testing)');
+          true; // Valid only when Agora project allows app-id-only auth
+      debugPrint(
+          'No token provided (OK only if Primary Certificate is disabled in Agora Console)');
     }
 
     debugPrint('=== REQUIREMENTS SUMMARY ===');

@@ -15,12 +15,12 @@ class CallScreen extends StatefulWidget {
   final String? token;
 
   const CallScreen({
-    Key? key,
+    super.key,
     required this.user,
     required this.isVideoCall,
     required this.channelId,
     this.token,
-  }) : super(key: key);
+  });
 
   @override
   State<CallScreen> createState() => _CallScreenState();
@@ -40,6 +40,7 @@ class _CallScreenState extends State<CallScreen> {
   StreamSubscription<bool>? _callEndedSubscription;
   bool _isEndingCall = false;
   bool _isErrorDialogVisible = false;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -206,11 +207,16 @@ class _CallScreenState extends State<CallScreen> {
       AgoraDebugHelper.debugPrint(
           'Call ended stream: $ended',
           emoji: '🔚');
+      if (!mounted || _isDisposed || _isEndingCall) return;
       if (ended) {
         AgoraDebugHelper.debugPrint(
             'Call ended - exiting screen',
             emoji: '📞');
-        _endCall();
+        if (_callService.isInCall) {
+          _endCall();
+        } else {
+          _popCallScreen();
+        }
       }
     });
 
@@ -293,16 +299,28 @@ class _CallScreenState extends State<CallScreen> {
 
   void _closeCurrentDialog() {
     _isErrorDialogVisible = false;
-    if (!mounted) return;
-    if (Get.isDialogOpen ?? false) {
-      Navigator.of(context, rootNavigator: true).pop();
+    if (!mounted || _isDisposed) return;
+    final navigator = Get.key.currentState;
+    if ((Get.isDialogOpen ?? false) &&
+        navigator != null &&
+        navigator.canPop()) {
+      navigator.pop();
     }
   }
 
   void _popCallScreen() {
     _isErrorDialogVisible = false;
-    if (!mounted) return;
-    Navigator.of(context).maybePop();
+    if (!mounted || _isDisposed) return;
+
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) {
+      return;
+    }
+
+    final navigator = Get.key.currentState;
+    if (navigator != null && navigator.canPop()) {
+      navigator.pop();
+    }
   }
 
   void _endCall() {
@@ -333,6 +351,7 @@ class _CallScreenState extends State<CallScreen> {
     print('🎤 Current mute state: $_isMuted');
 
     await _callService.toggleMute();
+    if (!mounted || _isDisposed) return;
     setState(() {
       _isMuted = _callService.isMuted;
     });
@@ -347,6 +366,7 @@ class _CallScreenState extends State<CallScreen> {
       print('📹 Current video state: $_isVideoEnabled');
 
       await _callService.toggleVideo();
+      if (!mounted || _isDisposed) return;
       setState(() {
         _isVideoEnabled = _callService.isVideoEnabled;
       });
@@ -361,6 +381,7 @@ class _CallScreenState extends State<CallScreen> {
     print('🔊 Current speaker state: $_isSpeakerEnabled');
 
     await _callService.toggleSpeaker();
+    if (!mounted || _isDisposed) return;
     setState(() {
       _isSpeakerEnabled = _callService.isSpeakerEnabled;
     });
@@ -437,9 +458,9 @@ class _CallScreenState extends State<CallScreen> {
                                     color: Colors.white)),
                           ),
                         ),
+                    ),
                   ),
                 ),
-              ),
             ],
 
             // Debug info overlay (only in debug mode)
@@ -538,7 +559,7 @@ class _CallScreenState extends State<CallScreen> {
   Widget _buildDefaultAvatar() {
     return Container(
       color: Colors.grey.shade600,
-      child: Icon(
+      child: const Icon(
         Icons.person,
         size: 80,
         color: Colors.white,
@@ -667,10 +688,13 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _connectionSubscription?.cancel();
     _remoteUserSubscription?.cancel();
     _callEndedSubscription?.cancel();
-    _callService.dispose();
+    if (_callService.isInCall) {
+      unawaited(_callService.endCall());
+    }
     super.dispose();
   }
 }

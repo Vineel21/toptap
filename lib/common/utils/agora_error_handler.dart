@@ -31,7 +31,7 @@ class AgoraErrorHandler {
     -102: 'Invalid token',
     -109: 'Token expired',
     -110:
-        'Token expired or invalid - Please restart the app',
+        'Token expired or invalid. Configure RTC token from backend, or disable Primary Certificate in Agora Console for testing.',
     -111: 'Connection interrupted',
     -112: 'Connection lost',
     -113: 'Not in channel',
@@ -167,7 +167,7 @@ class AgoraErrorHandler {
 
     if (errorCode == -110) {
       message =
-          'Your session has expired or the token is invalid. Please restart the app and try again.';
+          'Invalid Agora token. Your Agora project likely requires token authentication. Configure RTC token from backend, or disable Primary Certificate in Agora Console for testing.';
     } else if (errorCode == -109) {
       message =
           'Your session has expired. Please restart the app and try again.';

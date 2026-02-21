@@ -6,6 +6,9 @@ import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.media.Image;
 import android.media.MediaScannerConnection;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Surface;
@@ -22,6 +25,8 @@ import java.util.regex.PatternSyntaxException;
 import java.io.IOException;
 import java.io.InputStream;
 import android.graphics.BitmapFactory;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import ai.deepar.ar.ARErrorType;
 import ai.deepar.ar.AREventListener;
@@ -57,6 +62,9 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
     private TextureRegistry.SurfaceTextureEntry surfaceTextureEntry;
     private SurfaceTexture tempSurfaceTexture;
     private SafeCameraXHandler safeCameraXHandler;
+    private HandlerThread deepArThread;
+    private Handler deepArHandler;
+    private final Object deepArThreadLock = new Object();
     private String videoFilePath;
     private String screenshotPath;
 
@@ -67,6 +75,10 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
         videoCompleted,
         videoError,
         screenshotTaken
+    }
+
+    private interface DeepArTask<T> {
+        T run() throws Exception;
     }
 
 
@@ -93,41 +105,169 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
         });
     }
 
+    private void ensureDeepArThread() {
+        synchronized (deepArThreadLock) {
+            if (deepArThread != null && deepArThread.isAlive() && deepArHandler != null) {
+                return;
+            }
+
+            deepArThread = new HandlerThread("DeepARRenderThread");
+            deepArThread.start();
+            deepArHandler = new Handler(deepArThread.getLooper());
+            Log.d(TAG, "DeepAR render thread started");
+        }
+    }
+
+    private void shutdownDeepArThread() {
+        synchronized (deepArThreadLock) {
+            if (deepArThread == null) {
+                deepArHandler = null;
+                return;
+            }
+
+            try {
+                deepArThread.quitSafely();
+                deepArThread.join(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                Log.w(TAG, "Interrupted while stopping DeepAR render thread", e);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to stop DeepAR render thread", e);
+            } finally {
+                deepArThread = null;
+                deepArHandler = null;
+            }
+        }
+    }
+
+    private void postToDeepArThread(@NonNull Runnable runnable) {
+        ensureDeepArThread();
+
+        final Handler handler;
+        synchronized (deepArThreadLock) {
+            handler = deepArHandler;
+        }
+
+        if (handler == null || !handler.post(runnable)) {
+            Log.e(TAG, "Failed to post task to DeepAR render thread");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T runOnDeepArThreadBlocking(@NonNull DeepArTask<T> task, long timeoutMs)
+            throws Exception {
+        ensureDeepArThread();
+
+        final Handler handler;
+        synchronized (deepArThreadLock) {
+            handler = deepArHandler;
+        }
+
+        if (handler == null) {
+            throw new IllegalStateException("DeepAR render handler is unavailable");
+        }
+
+        if (Looper.myLooper() == handler.getLooper()) {
+            return task.run();
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Object[] resultHolder = new Object[1];
+        final Exception[] errorHolder = new Exception[1];
+
+        final boolean posted = handler.post(() -> {
+            try {
+                resultHolder[0] = task.run();
+            } catch (Exception e) {
+                errorHolder[0] = e;
+            } finally {
+                latch.countDown();
+            }
+        });
+
+        if (!posted) {
+            throw new IllegalStateException("Failed to post task to DeepAR render thread");
+        }
+
+        if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
+            throw new IllegalStateException("DeepAR render task timed out");
+        }
+
+        if (errorHolder[0] != null) {
+            throw errorHolder[0];
+        }
+
+        return (T) resultHolder[0];
+    }
+
+    private boolean executeDeepARAction(
+            @NonNull Result result,
+            @NonNull String operationName,
+            long timeoutMs,
+            @NonNull DeepArTask<Void> action,
+            @NonNull String successMessage
+    ) {
+        if (deepAR == null) {
+            result.error("NOT_INITIALIZED", "DeepAR is not initialized", null);
+            return false;
+        }
+
+        try {
+            runOnDeepArThreadBlocking(action, timeoutMs);
+            result.success(successMessage);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, operationName + " failed", e);
+            result.error("DEEPAR_ACTION_FAILED", operationName + " failed", e.getMessage());
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private void handleMethods(MethodCall call, Result result) {
-        Map<String, Object> arguments = (Map<String, Object>) call.arguments;
-        boolean enabled = false;
+        final Map<String, Object> arguments = call.arguments instanceof Map
+                ? (Map<String, Object>) call.arguments
+                : new HashMap<>();
 
         switch (call.method) {
-            case MethodStrings.initialize: // Initialize
-                String licenseKey = (String) arguments.get(MethodStrings.licenseKey);
-                String resolution = (String) arguments.get(MethodStrings.resolution);
+            case MethodStrings.initialize:
+                final String licenseKey = (String) arguments.get(MethodStrings.licenseKey);
+                final String resolution = (String) arguments.get(MethodStrings.resolution);
 
-                if(resolution.equals("veryHigh"))
+                if ("veryHigh".equals(resolution)) {
                     resolutionPreset = CameraResolutionPreset.P1920x1080;
-                 else if(resolution.equals("high"))
+                } else if ("high".equals(resolution)) {
                     resolutionPreset = CameraResolutionPreset.P1280x720;
-                 else if(resolution.equals("medium"))
+                } else if ("medium".equals(resolution)) {
                     resolutionPreset = CameraResolutionPreset.P640x480;
-                 else
+                } else {
                     resolutionPreset = CameraResolutionPreset.P640x360;
+                }
 
                 Log.d(TAG, "licenseKey = " + licenseKey);
                 final boolean success = initializeDeepAR(licenseKey, resolutionPreset);
-                if (success) {
-                    setCameraXChannel(resolutionPreset);
+                if (!success) {
+                    result.error("INITIALIZE_FAILED", "DeepAR initialization failed", null);
+                    break;
                 }
-                result.success("" + resolutionPreset.getWidth() + " " + resolutionPreset.getHeight());
+                setCameraXChannel(resolutionPreset);
+                result.success(resolutionPreset.getWidth() + " " + resolutionPreset.getHeight());
                 break;
 
-            case MethodStrings.switchEffect: // Switch Effect
-                String effect = ((String) arguments.get("effect"));
-                try {
-                    InputStream inputStream = _getAssetFileInputStream(effect);
-                    deepAR.switchEffect("effect", inputStream);
-                    inputStream.close();
-                    result.success("switchEffect called successfully");
+            case MethodStrings.switchEffect:
+                try (InputStream inputStream = _getAssetFileInputStream((String) arguments.get("effect"))) {
+                    executeDeepARAction(
+                            result,
+                            "switchEffect",
+                            1500,
+                            () -> {
+                                deepAR.switchEffect("effect", inputStream);
+                                return null;
+                            },
+                            "switchEffect called successfully"
+                    );
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "switchEffect failed", e);
                     result.error("111", "switchEffect failed", e.getMessage());
                 }
                 break;
@@ -136,175 +276,320 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
                 try {
                     File file = File.createTempFile("deepar_", ".mp4");
                     videoFilePath = file.getPath();
-                    deepAR.startVideoRecording(videoFilePath);
-                    result.success("Video recording started");
-
+                    final boolean started = executeDeepARAction(
+                            result,
+                            "startRecordingVideo",
+                            1500,
+                            () -> {
+                                deepAR.startVideoRecording(videoFilePath);
+                                return null;
+                            },
+                            "Video recording started"
+                    );
+                    if (!started) {
+                        videoResult(DeepArResponse.videoError, "Unable to start recording");
+                    }
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    Log.e("DeepAR", "Error : Unable to create file");
+                    Log.e(TAG, "Video recording failed", e);
                     videoResult(DeepArResponse.videoError, "Exception while creating file");
                     result.error("111", "Video recording failed", e.getMessage());
                 }
-
                 break;
 
             case MethodStrings.stopRecordingVideo:
-                 deepAR.stopVideoRecording();
-                 result.success("STOPPING_RECORDING");
+                executeDeepARAction(
+                        result,
+                        "stopRecordingVideo",
+                        1500,
+                        () -> {
+                            deepAR.stopVideoRecording();
+                            return null;
+                        },
+                        "STOPPING_RECORDING"
+                );
                 break;
+
             case "take_screenshot":
-                deepAR.takeScreenshot();
-                result.success("SCREENSHOT_TRIGGERED");
+                executeDeepARAction(
+                        result,
+                        "takeScreenshot",
+                        1500,
+                        () -> {
+                            deepAR.takeScreenshot();
+                            return null;
+                        },
+                        "SCREENSHOT_TRIGGERED"
+                );
                 break;
 
             case "switch_face_mask":
-                String mask = ((String) arguments.get("effect"));
-                if (mask == null || mask.equals("null")) {
-                    deepAR.switchEffect("mask", "null");
-                    result.success("switchMask called & reset success");
-                    return;
-                }
-                try {
-                    InputStream inputStream = _getAssetFileInputStream(mask);
-                    deepAR.switchEffect("mask", inputStream);
-                    inputStream.close();
-                    result.success("switchMask called successfully");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    result.error("111", "switchMask failed", e.getMessage());
+                final String mask = (String) arguments.get("effect");
+                if (mask == null || "null".equals(mask)) {
+                    executeDeepARAction(
+                            result,
+                            "switchFaceMaskReset",
+                            1500,
+                            () -> {
+                                deepAR.switchEffect("mask", "null");
+                                return null;
+                            },
+                            "switchMask called & reset success"
+                    );
+                    break;
                 }
 
+                try (InputStream inputStream = _getAssetFileInputStream(mask)) {
+                    executeDeepARAction(
+                            result,
+                            "switchFaceMask",
+                            1500,
+                            () -> {
+                                deepAR.switchEffect("mask", inputStream);
+                                return null;
+                            },
+                            "switchMask called successfully"
+                    );
+                } catch (IOException e) {
+                    Log.e(TAG, "switchMask failed", e);
+                    result.error("111", "switchMask failed", e.getMessage());
+                }
                 break;
 
             case "switch_filter":
-                String filter = ((String) arguments.get("effect"));
-                if (filter == null || filter.equals("null")){
-                    deepAR.switchEffect("filters", "null");
-                    result.success("switchFilter called & reset success");
-                    return;
+                final String filter = (String) arguments.get("effect");
+                if (filter == null || "null".equals(filter)) {
+                    executeDeepARAction(
+                            result,
+                            "switchFilterReset",
+                            1500,
+                            () -> {
+                                deepAR.switchEffect("filters", "null");
+                                return null;
+                            },
+                            "switchFilter called & reset success"
+                    );
+                    break;
                 }
-                try {
-                    InputStream inputStream = _getAssetFileInputStream(filter);
-                    deepAR.switchEffect("filters", inputStream);
-                    inputStream.close();
-                    result.success("switchFilter called successfully");
+
+                try (InputStream inputStream = _getAssetFileInputStream(filter)) {
+                    executeDeepARAction(
+                            result,
+                            "switchFilter",
+                            1500,
+                            () -> {
+                                deepAR.switchEffect("filters", inputStream);
+                                return null;
+                            },
+                            "switchFilter called successfully"
+                    );
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "switchFilter failed", e);
                     result.error("111", "switchFilter failed", e.getMessage());
                 }
                 break;
+
             case "switchEffectWithSlot":
-                String slot = ((String) arguments.get("slot"));
-                String path = ((String) arguments.get("path"));
-                int face = 0;
-                String targetGameObject = "";
+                final String slot = (String) arguments.get("slot");
+                final String path = (String) arguments.get("path");
+                final Object faceRaw = arguments.get("face");
+                final int face = faceRaw instanceof Number ? ((Number) faceRaw).intValue() : 0;
+                final String targetGameObject = (String) arguments.get("targetGameObject");
 
-                try {
-                    face = (int) arguments.get("face");
-                }catch (Exception e){
-                    e.printStackTrace();
+                if (path != null && path.toLowerCase().endsWith("none")) {
+                    executeDeepARAction(
+                            result,
+                            "switchEffectWithSlotReset",
+                            1500,
+                            () -> {
+                                deepAR.switchEffect(slot, getResetPath());
+                                return null;
+                            },
+                            "switchEffectWithSlot reset success"
+                    );
+                    break;
                 }
 
-                try {
-                    targetGameObject = ((String) arguments.get("targetGameObject"));
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
-
-                try {
-
-                    if (path != null && path.toLowerCase().endsWith("none") ){
-                        deepAR.switchEffect(slot, getResetPath()); // reset applied effect
-                        result.success("switchEffectWithSlot reset success");
-                        return;
-                    }
-
-                    InputStream inputStream = _getAssetFileInputStream(path);
-                    if (targetGameObject != null && !targetGameObject.isEmpty()){
-                        deepAR.switchEffect(slot, inputStream, face, targetGameObject);
-                    }else{
-                        deepAR.switchEffect(slot, inputStream, face);
-                    }
-                    inputStream.close();
-                    result.success("switchEffectWithSlot called successfully");
+                try (InputStream inputStream = _getAssetFileInputStream(path)) {
+                    executeDeepARAction(
+                            result,
+                            "switchEffectWithSlot",
+                            1500,
+                            () -> {
+                                if (targetGameObject != null && !targetGameObject.isEmpty()) {
+                                    deepAR.switchEffect(slot, inputStream, face, targetGameObject);
+                                } else {
+                                    deepAR.switchEffect(slot, inputStream, face);
+                                }
+                                return null;
+                            },
+                            "switchEffectWithSlot called successfully"
+                    );
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "switchEffectWithSlot failed", e);
                     result.error("111", "switchEffectWithSlot failed", e.getMessage());
                 }
                 break;
+
             case "fireTrigger":
-                String trigger = ((String) arguments.get("trigger"));
-                deepAR.fireTrigger(trigger);
-                result.success("fireTrigger called successfully");
+                executeDeepARAction(
+                        result,
+                        "fireTrigger",
+                        1500,
+                        () -> {
+                            deepAR.fireTrigger((String) arguments.get("trigger"));
+                            return null;
+                        },
+                        "fireTrigger called successfully"
+                );
                 break;
+
             case "showStats":
-                enabled = ((boolean) arguments.get("enabled"));
-                deepAR.showStats(enabled);
-                result.success("showStats called successfully");
+                final boolean showStatsEnabled = (boolean) arguments.get("enabled");
+                executeDeepARAction(
+                        result,
+                        "showStats",
+                        1500,
+                        () -> {
+                            deepAR.showStats(showStatsEnabled);
+                            return null;
+                        },
+                        "showStats called successfully"
+                );
                 break;
+
             case "simulatePhysics":
-                enabled = ((boolean) arguments.get("enabled"));
-                deepAR.simulatePhysics(enabled);
-                result.success("simulatePhysics called successfully");
+                final boolean simulateEnabled = (boolean) arguments.get("enabled");
+                executeDeepARAction(
+                        result,
+                        "simulatePhysics",
+                        1500,
+                        () -> {
+                            deepAR.simulatePhysics(simulateEnabled);
+                            return null;
+                        },
+                        "simulatePhysics called successfully"
+                );
                 break;
+
             case "showColliders":
-                enabled = ((boolean) arguments.get("enabled"));
-                deepAR.showColliders(enabled);
-                result.success("showColliders called successfully");
+                final boolean showCollidersEnabled = (boolean) arguments.get("enabled");
+                executeDeepARAction(
+                        result,
+                        "showColliders",
+                        1500,
+                        () -> {
+                            deepAR.showColliders(showCollidersEnabled);
+                            return null;
+                        },
+                        "showColliders called successfully"
+                );
                 break;
+
             case "moveGameObject":
-                String selectedGameObjectName = ((String) arguments.get("selectedGameObjectName"));
-                String targetGameObjectName = ((String) arguments.get("targetGameObjectName"));
-                deepAR.moveGameObject(selectedGameObjectName, targetGameObjectName);
-                result.success("moveGameObject called successfully");
+                final String selectedGameObjectName = (String) arguments.get("selectedGameObjectName");
+                final String targetGameObjectName = (String) arguments.get("targetGameObjectName");
+                executeDeepARAction(
+                        result,
+                        "moveGameObject",
+                        1500,
+                        () -> {
+                            deepAR.moveGameObject(selectedGameObjectName, targetGameObjectName);
+                            return null;
+                        },
+                        "moveGameObject called successfully"
+                );
                 break;
 
             case "changeParameter":
-                String gameObject = ((String) arguments.get("gameObject"));
-                String component = ((String) arguments.get("component"));
-                String parameter = ((String) arguments.get("parameter"));
-                Object newParameter = arguments.get("newParameter");
+                final String gameObject = (String) arguments.get("gameObject");
+                final String component = (String) arguments.get("component");
+                final String parameter = (String) arguments.get("parameter");
+                final Object newParameter = arguments.get("newParameter");
 
-                if (newParameter == null){
+                if (newParameter == null) {
+                    final float x = ((Number) arguments.get("x")).floatValue();
+                    final float y = ((Number) arguments.get("y")).floatValue();
+                    final float z = ((Number) arguments.get("z")).floatValue();
+                    final Object w = arguments.get("w");
 
-                    float x = ((Double) arguments.get("x")).floatValue();
-                    float y = ((Double) arguments.get("y")).floatValue();
-                    float z = ((Double) arguments.get("z")).floatValue();
-                    Object w = arguments.get("w");
-
-                    if (w == null){
-                        deepAR.changeParameterVec3(gameObject, component, parameter, x, y, z);
-                        result.success("changeParameter called successfully");
-                    }else{
-                        float floatValueW = ((Double) w).floatValue();
-                        deepAR.changeParameterVec4(gameObject, component, parameter, x, y, z, floatValueW);
-                        result.success("changeParameter called successfully");
+                    if (w == null) {
+                        executeDeepARAction(
+                                result,
+                                "changeParameterVec3",
+                                1500,
+                                () -> {
+                                    deepAR.changeParameterVec3(gameObject, component, parameter, x, y, z);
+                                    return null;
+                                },
+                                "changeParameter called successfully"
+                        );
+                    } else {
+                        final float floatValueW = ((Number) w).floatValue();
+                        executeDeepARAction(
+                                result,
+                                "changeParameterVec4",
+                                1500,
+                                () -> {
+                                    deepAR.changeParameterVec4(gameObject, component, parameter, x, y, z, floatValueW);
+                                    return null;
+                                },
+                                "changeParameter called successfully"
+                        );
                     }
-                }
-                else if (newParameter instanceof Boolean){
-                    deepAR.changeParameterBool(gameObject, component, parameter, (Boolean) newParameter);
-                    result.success("changeParameter called successfully");
-                }
-                else if (newParameter instanceof Double){
-                    deepAR.changeParameterFloat(gameObject, component, parameter, ((Double) newParameter).floatValue());
-                    result.success("changeParameter called successfully");
-                }
-                else if (newParameter instanceof String) {
-                    try {
-                        InputStream inputStream = _getAssetFileInputStream((String) newParameter);
-                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                        deepAR.changeParameterTexture(gameObject, component, parameter, bitmap);
-                        inputStream.close();
-                        result.success("changeParameter called successfully");
+                } else if (newParameter instanceof Boolean) {
+                    final boolean boolParam = (Boolean) newParameter;
+                    executeDeepARAction(
+                            result,
+                            "changeParameterBool",
+                            1500,
+                            () -> {
+                                deepAR.changeParameterBool(gameObject, component, parameter, boolParam);
+                                return null;
+                            },
+                            "changeParameter called successfully"
+                    );
+                } else if (newParameter instanceof Double) {
+                    final float floatParam = ((Double) newParameter).floatValue();
+                    executeDeepARAction(
+                            result,
+                            "changeParameterFloat",
+                            1500,
+                            () -> {
+                                deepAR.changeParameterFloat(gameObject, component, parameter, floatParam);
+                                return null;
+                            },
+                            "changeParameter called successfully"
+                    );
+                } else if (newParameter instanceof String) {
+                    try (InputStream inputStream = _getAssetFileInputStream((String) newParameter)) {
+                        final Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                        if (bitmap == null) {
+                            result.error("111", "changeParameter failed", "Failed to decode texture bitmap");
+                            break;
+                        }
+                        executeDeepARAction(
+                                result,
+                                "changeParameterTexture",
+                                1500,
+                                () -> {
+                                    deepAR.changeParameterTexture(gameObject, component, parameter, bitmap);
+                                    return null;
+                                },
+                                "changeParameter called successfully"
+                        );
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.e(TAG, "changeParameter failed", e);
                         result.error("111", "changeParameter failed", e.getMessage());
                     }
+                } else {
+                    result.error("INVALID_PARAMETER", "Unsupported changeParameter value type", null);
                 }
                 break;
+
+            default:
+                result.notImplemented();
+                break;
         }
-
-
     }
 
     private String getResetPath(){
@@ -325,6 +610,7 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
 
         safeCameraXHandler = new SafeCameraXHandler(activity,
                 textureId, deepAR, resolutionPreset,
+                this::postToDeepArThread,
                 this::sendCameraHealthEvent,
                 this::handleCameraHandlerDestroyed);
         cameraXChannel.setMethodCallHandler(safeCameraXHandler);
@@ -368,23 +654,33 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
             int width = resolutionPreset.getHeight();
             int height = resolutionPreset.getWidth();
 
-            Log.d(TAG, "Creating new DeepAR instance");
-            deepAR = new DeepAR(activity);
-            deepAR.setLicenseKey(licenseKey);
-            deepAR.initialize(activity, this);
-            deepAR.changeLiveMode(true);
-
             Log.d(TAG, "Creating surface texture");
             surfaceTextureEntry = flutterPlugin.getTextureRegistry().createSurfaceTexture();
             tempSurfaceTexture = surfaceTextureEntry.surfaceTexture();
             tempSurfaceTexture.setDefaultBufferSize(width, height);
             surface = new Surface(tempSurfaceTexture);
 
-            Log.d(TAG, "Setting render surface");
-            deepAR.setRenderSurface(surface, width, height);
-            textureId = surfaceTextureEntry.id();
+            try {
+                runOnDeepArThreadBlocking(() -> {
+                    Log.d(TAG, "Creating new DeepAR instance on DeepAR render thread");
+                    deepAR = new DeepAR(activity);
+                    deepAR.setLicenseKey(licenseKey);
+                    deepAR.initialize(activity, this);
+                    deepAR.changeLiveMode(true);
 
-            Log.d(TAG, "DeepAR initialized successfully with textureId: " + textureId);
+                    Log.d(TAG, "Setting render surface on DeepAR render thread");
+                    deepAR.setRenderSurface(surface, width, height);
+                    textureId = surfaceTextureEntry.id();
+                    return null;
+                }, 3000);
+                Log.d(TAG, "DeepAR initialized successfully with textureId: " + textureId);
+            } catch (Exception initError) {
+                Log.e(TAG, "DeepAR initialization failed", initError);
+                cleanupNativeResources();
+                cleanupSurfaceResources();
+                return false;
+            }
+
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error initializing DeepAR", e);
@@ -420,6 +716,7 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
 
         cleanupNativeResources();
         cleanupSurfaceResources();
+        shutdownDeepArThread();
 
         cameraXChannel = null;
         channel = null;
@@ -559,13 +856,17 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
     private void cleanupNativeResources() {
         if (deepAR != null) {
             Log.d(TAG, "Cleaning up existing DeepAR instance before initialization");
+            final DeepAR deepARToRelease = deepAR;
+            deepAR = null;
             try {
-                deepAR.setAREventListener(null);
-                deepAR.release();
+                runOnDeepArThreadBlocking(() -> {
+                    deepARToRelease.setAREventListener(null);
+                    deepARToRelease.release();
+                    return null;
+                }, 1500);
             } catch (Exception e) {
                 Log.e(TAG, "Error cleaning up existing DeepAR instance", e);
             }
-            deepAR = null;
         }
     }
 
@@ -624,16 +925,24 @@ public class DeepArPlugin implements FlutterPlugin, AREventListener, ActivityAwa
         }
     }
 
-    private void handleCameraHandlerDestroyed() {
+    private void handleCameraHandlerDestroyed(DeepAR destroyedDeepARInstance) {
         try {
             if (activity != null) {
                 activity.runOnUiThread(() -> {
-                    cleanupNativeResources();
-                    cleanupSurfaceResources();
+                    if (destroyedDeepARInstance != null && deepAR == destroyedDeepARInstance) {
+                        cleanupNativeResources();
+                        cleanupSurfaceResources();
+                    } else {
+                        Log.d(TAG, "Ignoring stale SafeCameraXHandler destroy callback");
+                    }
                 });
             } else {
-                cleanupNativeResources();
-                cleanupSurfaceResources();
+                if (destroyedDeepARInstance != null && deepAR == destroyedDeepARInstance) {
+                    cleanupNativeResources();
+                    cleanupSurfaceResources();
+                } else {
+                    Log.d(TAG, "Ignoring stale SafeCameraXHandler destroy callback");
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed to cleanup DeepAR resources after handler destroy", e);

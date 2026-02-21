@@ -2,7 +2,6 @@ import 'package:deepar_flutter_plus/deepar_flutter_plus.dart';
 import 'package:figma_squircle_updated/figma_squircle.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:retrytech_plugin/retrytech_plugin.dart';
 import 'package:shortzz/common/widget/black_gradient_shadow.dart';
 import 'package:shortzz/common/widget/custom_border_round_icon.dart';
 import 'package:shortzz/common/widget/loader_widget.dart';
@@ -53,22 +52,62 @@ class CameraScreen extends StatelessWidget {
       child: ClipSmoothRect(
         radius: SmoothBorderRadius(cornerRadius: 20, cornerSmoothing: 1),
         child: Obx(() {
-          final useDeepAr = controller.isUsingDeepAr;
-          if (useDeepAr) {
-            DeepArControllerPlus deepArControllerPlus =
-                controller.deepArControllerPlus.value;
-            return controller.isDeepARInitialized.value
-                ? FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: 720,
-                      height: 1280,
-                      child: DeepArPreviewPlus(deepArControllerPlus),
+          DeepArControllerPlus deepArControllerPlus =
+              controller.deepArControllerPlus.value;
+          if (controller.isDeepARInitialized.value) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: 720,
+                    height: 1280,
+                    child: DeepArPreviewPlus(deepArControllerPlus),
+                  ),
+                ),
+                const Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Color(0xAA000000),
+                      borderRadius: BorderRadius.all(Radius.circular(6)),
                     ),
-                  )
-                : const LoaderWidget();
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Text(
+                        'deepar.ai',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
           }
-          return RetrytechPlugin.shared.cameraView;
+
+          if (controller.deepArStatusMessage.value.isNotEmpty) {
+            return ColoredBox(
+              color: Colors.black,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    controller.deepArStatusMessage.value,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return const LoaderWidget();
         }),
       ),
     );

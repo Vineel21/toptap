@@ -27,7 +27,7 @@ class InitializeResult {
 /// Controls all interaction with DeepAR Sdk.
 class DeepArControllerPlus {
   late final DeepArPlatformHandler _deepArPlatformHandler;
-  late final Resolution _resolution;
+  Resolution _resolution = Resolution.medium;
 
   int? _textureId;
   Size? _imageSize;

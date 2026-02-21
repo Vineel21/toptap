@@ -5,16 +5,21 @@
 class AgoraConfig {
   // ✅ NEW APP ID - No certificate required
   static const String appId =
-      "f7bc5b1b34f74247a32aca28f54788e5";
+      "c0d00a01ab0d4111826a7ebc87c4c0ad";
 
-      // static const String appId =
+      // static const String appId =f7bc5b1b34f74247a32aca28f54788e5
       // "c0d00a01ab0d4111826a7ebc87c4c0ad";
 
-  // ❌ NO CERTIFICATE - Token authentication NOT required f7bc5b1b34f74247a32aca28f54788e5
+  // ❌ NO CERTIFICATE - Token authentication NOT required
   static const String appCertificate = "";
 
   // No temp token needed since there's no certificate
   static String manualTempToken = "";
+
+  // If your Agora Console project has Primary Certificate enabled,
+  // keep this false and provide a valid RTC token.
+  // Set to true only when token authentication is disabled in Console.
+  static const bool allowTokenlessCallsForTesting = true;
 
   // Fixed test channel support (set to true to force a predictable channel during testing)
   // ❌ DISABLED: Must use dynamic channel from notification so caller/receiver join same channel
@@ -65,6 +70,33 @@ class AgoraConfig {
 
     print("✅ No App Certificate - using null token");
     return null;
+  }
+
+  /// Resolve call token from runtime payload or local test config.
+  static String? resolveCallToken(
+      {String? runtimeToken,
+      required String channelId,
+      required int uid}) {
+    final runtime = runtimeToken?.trim() ?? '';
+    if (runtime.isNotEmpty) {
+      return runtime;
+    }
+    return generateTestToken(channelId, uid)?.trim();
+  }
+
+  /// True when a token is configured locally (manual or app-certificate based flow).
+  static bool hasConfiguredToken() {
+    final token = manualTempToken.trim();
+    return token.isNotEmpty;
+  }
+
+  /// Whether current call attempt must include a token.
+  /// [detectedByAgora] should be true after receiving errInvalidToken once.
+  static bool isTokenMandatory(
+      {bool detectedByAgora = false}) {
+    if (detectedByAgora) return true;
+    if (isTokenRequired()) return true;
+    return !allowTokenlessCallsForTesting;
   }
 
   /// Check if token authentication is likely required

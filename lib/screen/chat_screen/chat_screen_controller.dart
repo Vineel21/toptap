@@ -1152,7 +1152,6 @@ class ChatScreenController extends BlockUserController
               user: callUser,
               isVideoCall: false,
               channelId: channelId,
-              token: null,
             ));
       } else {
         Loggers.error('Failed to start voice call');
@@ -1206,7 +1205,6 @@ class ChatScreenController extends BlockUserController
               user: callUser,
               isVideoCall: true,
               channelId: channelId,
-              token: null,
             ));
       } else {
         Loggers.error('Failed to start video call');
