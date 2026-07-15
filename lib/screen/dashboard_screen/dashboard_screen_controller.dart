@@ -210,17 +210,16 @@ import 'package:shortzz/common/controller/base_controller.dart';
 import 'package:shortzz/common/manager/logger.dart';
 import 'package:shortzz/common/manager/session_manager.dart';
 import 'package:shortzz/common/service/subscription/subscription_manager.dart';
+import 'package:shortzz/common/service/zego_engine_service.dart';
 import 'package:shortzz/common/widget/restart_widget.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/chat/chat_thread.dart';
-import 'package:shortzz/model/general/settings_model.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/screen/camera_screen/camera_screen.dart';
 import 'package:shortzz/screen/camera_screen/camera_types.dart';
 import 'package:shortzz/screen/message_screen/message_screen_controller.dart';
 import 'package:shortzz/utilities/asset_res.dart';
 import 'package:shortzz/utilities/firebase_const.dart';
-import 'package:zego_express_engine/zego_express_engine.dart';
 import 'package:shortzz/screen/feed_screen/feed_screen_controller.dart';
 
 class DashboardScreenController extends BaseController
@@ -228,8 +227,7 @@ class DashboardScreenController extends BaseController
   List<String> bottomIconList = [
     AssetRes.icReel,
     AssetRes.icAudience,
-    AssetRes
-        .icPlusDark, // Placeholder for center '+' button
+    AssetRes.icPlusDark, // Placeholder for center '+' button
     AssetRes.icChat,
     AssetRes.icProfile
   ];
@@ -237,10 +235,8 @@ class DashboardScreenController extends BaseController
   RxInt selectedPageIndex = 0.obs;
   RxDouble scaleValue = 1.0.obs;
   Function(int index)? onBottomIndexChanged;
-  Rx<PostUploadingProgress> postProgress =
-      Rx(PostUploadingProgress());
-  Function(PostUploadingProgress progress) onProgress =
-      (_) {};
+  Rx<PostUploadingProgress> postProgress = Rx(PostUploadingProgress());
+  Function(PostUploadingProgress progress) onProgress = (_) {};
 
   late AnimationController animationController;
 
@@ -256,16 +252,12 @@ class DashboardScreenController extends BaseController
     super.onInit();
 
     animationController = AnimationController(
-        duration: const Duration(milliseconds: 200),
-        vsync: this);
-    scaleAnimation =
-        Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-          parent: animationController,
-          curve: Curves.easeInOut),
+        duration: const Duration(milliseconds: 200), vsync: this);
+    scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: animationController, curve: Curves.easeInOut),
     )..addListener(() {
-            scaleValue.value = scaleAnimation.value;
-          });
+        scaleValue.value = scaleAnimation.value;
+      });
     onProgress = (progress) {
       postProgress.value = progress;
     };
@@ -306,18 +298,15 @@ class DashboardScreenController extends BaseController
 
       // Launch camera - show options sheet for post/story/reel
       // For now, default to post (reels)
-      Get.to(() => const CameraScreen(
-          cameraType: CameraScreenType.post));
+      Get.to(() => const CameraScreen(cameraType: CameraScreenType.post));
       return;
     }
 
     // Refresh message screen when navigating to it
     if (index == 1) {
-      Loggers.success(
-          '🔄 Navigating to Messages - triggering refresh');
+      Loggers.success('🔄 Navigating to Messages - triggering refresh');
       try {
-        final messageController =
-            Get.find<MessageScreenController>();
+        final messageController = Get.find<MessageScreenController>();
         messageController.refreshMessages();
       } catch (e) {
         Loggers.warning(
@@ -358,11 +347,9 @@ class DashboardScreenController extends BaseController
     if (selectedPageIndex.value != index) return;
     if (Get.isRegistered<FeedScreenController>()) {
       final controller = Get.find<FeedScreenController>();
-      if (controller.posts.isNotEmpty &&
-          !controller.isLoading.value) {
+      if (controller.posts.isNotEmpty && !controller.isLoading.value) {
         controller.postScrollController.animateTo(0.0,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.linear);
+            duration: const Duration(milliseconds: 150), curve: Curves.linear);
         controller.refreshKey.currentState?.show();
       }
     }
@@ -377,8 +364,7 @@ class DashboardScreenController extends BaseController
         .withConverter(
             fromFirestore: (snapshot, options) =>
                 ChatThread.fromJson(snapshot.data()!),
-            toFirestore: (ChatThread value, options) =>
-                value.toJson())
+            toFirestore: (ChatThread value, options) => value.toJson())
         .snapshots()
         .listen((event) {
       int chatCount = 0;
@@ -408,21 +394,14 @@ class DashboardScreenController extends BaseController
   }
 
   Future<void> createZegoEngine() async {
-    Setting? appSetting =
-        SessionManager.instance.getSettings();
-    int appId = int.parse(appSetting?.zegoAppId ?? '0');
-    try {
-      await ZegoExpressEngine.createEngineWithProfile(
-          ZegoEngineProfile(appId, ZegoScenario.Default,
-              appSign: appSetting?.zegoAppSign));
-    } on MissingPluginException catch (e) {
-      Loggers.error('Create Zego Engine : ${e.message}');
+    bool isReady = await ZegoEngineService.instance.ensureEngine();
+    if (!isReady) {
+      Loggers.error('Create Zego Engine failed');
     }
   }
 
   Future<void> _fetchLanguageFromUser() async {
-    String savedLanguage =
-        SessionManager.instance.getLang();
+    String savedLanguage = SessionManager.instance.getLang();
     String userLanguage = user?.appLanguage ?? 'en';
     if (userLanguage != savedLanguage) {
       SessionManager.instance.setLang(userLanguage);

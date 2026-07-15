@@ -77,7 +77,7 @@ dependencies:
   geolocator: ^14.0.1
   get: ^4.7.2
   get_storage: ^2.1.1
-  google_fonts: ^6.2.1
+  google_fonts: ^6.3.3
   google_maps_flutter: ^2.12.2
   google_mlkit_barcode_scanning: ^0.14.1
   google_mlkit_face_detection: ^0.13.1

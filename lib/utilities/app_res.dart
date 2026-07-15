@@ -47,7 +47,8 @@ class AppRes {
 
   // Create Feed limit
   static int imageLimit = 5;
-  static int maxVideoDuration = 30; // Enter second only
+  // Legacy compatibility value: keep aligned with longest selectable reel duration.
+  static int maxVideoDuration = maxReelDuration; // In seconds
 
   // Pin Post and comment
   static const String postPinIcon = '📌';

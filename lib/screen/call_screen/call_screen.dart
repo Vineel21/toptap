@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shortzz/common/extensions/string_extension.dart';
 import 'package:shortzz/common/service/agora_call_service.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/common/config/agora_config.dart';
@@ -46,8 +47,7 @@ class _CallScreenState extends State<CallScreen> {
   void initState() {
     super.initState();
     // ✅ Use effective channel ID (respects fixed test channel setting)
-    _channelId =
-        AgoraConfig.effectiveChannelId(widget.channelId);
+    _channelId = AgoraConfig.effectiveChannelId(widget.channelId);
     _runtimeToken = widget.token ?? '';
     _initializeCall();
     _setupListeners();
@@ -56,19 +56,14 @@ class _CallScreenState extends State<CallScreen> {
   Future<void> _initializeCall() async {
     try {
       // Debug: Log call initialization details
-      AgoraDebugHelper.debugPrint(
-          '=== CALL SCREEN INITIALIZATION START ===',
+      AgoraDebugHelper.debugPrint('=== CALL SCREEN INITIALIZATION START ===',
           emoji: '🚀');
-      AgoraDebugHelper.debugPrint(
-          'App ID: ${AgoraConfig.appId}');
-      AgoraDebugHelper.debugPrint(
-          'Channel ID: $_channelId');
+      AgoraDebugHelper.debugPrint('App ID: ${AgoraConfig.appId}');
+      AgoraDebugHelper.debugPrint('Channel ID: $_channelId');
       AgoraDebugHelper.debugPrint(
           'Token: ${_runtimeToken.isEmpty ? "null (no token)" : "Provided/Runtime"}');
-      AgoraDebugHelper.debugPrint(
-          'Is Video Call: ${widget.isVideoCall}');
-      AgoraDebugHelper.debugPrint(
-          'User ID: ${widget.user.id ?? "Unknown"}');
+      AgoraDebugHelper.debugPrint('Is Video Call: ${widget.isVideoCall}');
+      AgoraDebugHelper.debugPrint('User ID: ${widget.user.id ?? "Unknown"}');
 
       // Check all requirements before starting
       Map<String, bool> requirements =
@@ -80,8 +75,7 @@ class _CallScreenState extends State<CallScreen> {
       );
 
       if (!requirements.values.every((v) => v)) {
-        AgoraDebugHelper.debugPrint(
-            'Call requirements not met - aborting',
+        AgoraDebugHelper.debugPrint('Call requirements not met - aborting',
             emoji: '❌');
         _showErrorAndExit(
             'Call requirements not met. Check permissions and network.');
@@ -89,57 +83,41 @@ class _CallScreenState extends State<CallScreen> {
       }
 
       // Initialize Agora with App ID from config
-      AgoraDebugHelper.debugPrint(
-          'Initializing Agora engine...',
-          emoji: '🔧');
-      bool initialized = await _callService
-          .initializeEngine(appId: AgoraConfig.appId);
+      AgoraDebugHelper.debugPrint('Initializing Agora engine...', emoji: '🔧');
+      bool initialized =
+          await _callService.initializeEngine(appId: AgoraConfig.appId);
       if (!initialized) {
-        AgoraDebugHelper.debugPrint(
-            'Engine initialization failed',
-            emoji: '❌');
-        _showErrorAndExit(
-            'Failed to initialize call engine');
+        AgoraDebugHelper.debugPrint('Engine initialization failed', emoji: '❌');
+        _showErrorAndExit('Failed to initialize call engine');
         return;
       }
-      AgoraDebugHelper.debugPrint(
-          'Engine initialized successfully',
+      AgoraDebugHelper.debugPrint('Engine initialized successfully',
           emoji: '✅');
 
       // Small delay to ensure engine is ready
-      AgoraDebugHelper.debugPrint(
-          'Waiting for engine to be ready...',
+      AgoraDebugHelper.debugPrint('Waiting for engine to be ready...',
           emoji: '⏳');
-      await Future.delayed(
-          const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 500));
 
       // Start the call
-      AgoraDebugHelper.debugPrint('Starting call...',
-          emoji: '📞');
+      AgoraDebugHelper.debugPrint('Starting call...', emoji: '📞');
       bool callStarted;
       if (widget.isVideoCall) {
-        AgoraDebugHelper.debugPrint(
-            'Starting video call...',
-            emoji: '📹');
+        AgoraDebugHelper.debugPrint('Starting video call...', emoji: '📹');
         callStarted = await _callService.startVideoCall(
           channelId: _channelId,
-          token:
-              _runtimeToken.isEmpty ? null : _runtimeToken,
+          token: _runtimeToken.isEmpty ? null : _runtimeToken,
         );
       } else {
-        AgoraDebugHelper.debugPrint(
-            'Starting audio call...',
-            emoji: '🎵');
+        AgoraDebugHelper.debugPrint('Starting audio call...', emoji: '🎵');
         callStarted = await _callService.startAudioCall(
           channelId: _channelId,
-          token:
-              _runtimeToken.isEmpty ? null : _runtimeToken,
+          token: _runtimeToken.isEmpty ? null : _runtimeToken,
         );
       }
 
       if (!callStarted) {
-        AgoraDebugHelper.debugPrint('Call start failed',
-            emoji: '❌');
+        AgoraDebugHelper.debugPrint('Call start failed', emoji: '❌');
         _showErrorAndExit('Failed to start call');
         return;
       }
@@ -153,31 +131,25 @@ class _CallScreenState extends State<CallScreen> {
         });
       }
 
-      AgoraDebugHelper.debugPrint(
-          '=== CALL INITIALIZATION COMPLETE ===',
+      AgoraDebugHelper.debugPrint('=== CALL INITIALIZATION COMPLETE ===',
           emoji: '🎉');
-      AgoraDebugHelper.debugPrint(
-          'Call started successfully');
+      AgoraDebugHelper.debugPrint('Call started successfully');
       AgoraDebugHelper.debugPrint('Channel: $_channelId');
-      AgoraDebugHelper.debugPrint(
-          'Video: ${widget.isVideoCall}');
+      AgoraDebugHelper.debugPrint('Video: ${widget.isVideoCall}');
     } catch (e, stackTrace) {
-      AgoraDebugHelper.logError(
-          e, 'Call Screen Initialization',
+      AgoraDebugHelper.logError(e, 'Call Screen Initialization',
           stackTrace: stackTrace);
       _showErrorAndExit('Call initialization failed: $e');
     }
   }
 
   void _setupListeners() {
-    AgoraDebugHelper.debugPrint(
-        '=== SETTING UP CALL LISTENERS ===',
+    AgoraDebugHelper.debugPrint('=== SETTING UP CALL LISTENERS ===',
         emoji: '🔗');
 
-    _connectionSubscription = _callService.connectionStateStream
-        .listen((isConnected) {
-      AgoraDebugHelper.debugPrint(
-          'Connection state changed: $isConnected',
+    _connectionSubscription =
+        _callService.connectionStateStream.listen((isConnected) {
+      AgoraDebugHelper.debugPrint('Connection state changed: $isConnected',
           emoji: '🔗');
       if (!mounted) return;
       setState(() {
@@ -186,32 +158,25 @@ class _CallScreenState extends State<CallScreen> {
     });
 
     _remoteUserSubscription = _callService.remoteUserStream.listen((remoteUid) {
-      AgoraDebugHelper.debugPrint(
-          'Remote user state changed: $remoteUid',
+      AgoraDebugHelper.debugPrint('Remote user state changed: $remoteUid',
           emoji: '👥');
       if (!mounted) return;
       setState(() {
         _hasRemoteUser = remoteUid != null;
       });
       if (remoteUid != null) {
-        AgoraDebugHelper.debugPrint(
-            'Remote user joined: $remoteUid',
+        AgoraDebugHelper.debugPrint('Remote user joined: $remoteUid',
             emoji: '🎉');
       } else {
-        AgoraDebugHelper.debugPrint('Remote user left',
-            emoji: '👋');
+        AgoraDebugHelper.debugPrint('Remote user left', emoji: '👋');
       }
     });
 
     _callEndedSubscription = _callService.callEndedStream.listen((ended) {
-      AgoraDebugHelper.debugPrint(
-          'Call ended stream: $ended',
-          emoji: '🔚');
+      AgoraDebugHelper.debugPrint('Call ended stream: $ended', emoji: '🔚');
       if (!mounted || _isDisposed || _isEndingCall) return;
       if (ended) {
-        AgoraDebugHelper.debugPrint(
-            'Call ended - exiting screen',
-            emoji: '📞');
+        AgoraDebugHelper.debugPrint('Call ended - exiting screen', emoji: '📞');
         if (_callService.isInCall) {
           _endCall();
         } else {
@@ -220,8 +185,7 @@ class _CallScreenState extends State<CallScreen> {
       }
     });
 
-    AgoraDebugHelper.debugPrint(
-        'Call listeners set up successfully',
+    AgoraDebugHelper.debugPrint('Call listeners set up successfully',
         emoji: '✅');
   }
 
@@ -272,10 +236,8 @@ class _CallScreenState extends State<CallScreen> {
             onPressed: () {
               _closeCurrentDialog();
               // Pass error 110 to diagnostic if it's a token error
-              int? errorCode =
-                  message.contains('110') ? -110 : null;
-              AgoraCallDiagnostic.runDiagnostic(
-                  specificError: errorCode);
+              int? errorCode = message.contains('110') ? -110 : null;
+              AgoraCallDiagnostic.runDiagnostic(specificError: errorCode);
             },
             child: const Text('Diagnose'),
           ),
@@ -402,10 +364,10 @@ class _CallScreenState extends State<CallScreen> {
   @override
   Widget build(BuildContext context) {
     // Debug video view state - pass widget.isVideoCall to force video call mode
-    final localVideoView = _callService.getLocalVideoView(
-        forceVideoCall: widget.isVideoCall);
-    final remoteVideoView = _callService.getRemoteVideoView(
-        forceVideoCall: widget.isVideoCall);
+    final localVideoView =
+        _callService.getLocalVideoView(forceVideoCall: widget.isVideoCall);
+    final remoteVideoView =
+        _callService.getRemoteVideoView(forceVideoCall: widget.isVideoCall);
 
     print(
         '🖥️ BUILD: LocalVideo: ${localVideoView != null}, RemoteVideo: ${remoteVideoView != null}, RemoteUID: ${_callService.remoteUid}, HasRemote: $_hasRemoteUser, VideoEnabled: $_isVideoEnabled');
@@ -426,10 +388,8 @@ class _CallScreenState extends State<CallScreen> {
             if (widget.isVideoCall) ...[
               Positioned.fill(
                 child: _hasRemoteUser
-                    ? (remoteVideoView ??
-                        _buildAvatarView())
-                    : (localVideoView ??
-                        _buildAvatarView()),
+                    ? (remoteVideoView ?? _buildAvatarView())
+                    : (localVideoView ?? _buildAvatarView()),
               ),
             ] else
               _buildAvatarView(),
@@ -444,8 +404,7 @@ class _CallScreenState extends State<CallScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: Colors.white, width: 2),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
@@ -454,13 +413,12 @@ class _CallScreenState extends State<CallScreen> {
                           color: Colors.grey,
                           child: const Center(
                             child: Text('No Video',
-                                style: TextStyle(
-                                    color: Colors.white)),
+                                style: TextStyle(color: Colors.white)),
                           ),
                         ),
-                    ),
                   ),
                 ),
+              ),
             ],
 
             // Debug info overlay (only in debug mode)
@@ -545,11 +503,10 @@ class _CallScreenState extends State<CallScreen> {
         child: widget.user.profilePhoto != null &&
                 widget.user.profilePhoto!.isNotEmpty
             ? Image.network(
-                widget.user.profilePhoto!,
+                widget.user.profilePhoto!.addBaseURL(),
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) =>
-                        _buildDefaultAvatar(),
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildDefaultAvatar(),
               )
             : _buildDefaultAvatar(),
       ),
@@ -614,32 +571,23 @@ class _CallScreenState extends State<CallScreen> {
           _buildControlButton(
             icon: _isMuted ? Icons.mic_off : Icons.mic,
             onTap: _toggleMute,
-            backgroundColor:
-                _isMuted ? Colors.red : Colors.white24,
+            backgroundColor: _isMuted ? Colors.red : Colors.white24,
           ),
 
           // Speaker button (audio calls only)
           if (!widget.isVideoCall)
             _buildControlButton(
-              icon: _isSpeakerEnabled
-                  ? Icons.volume_up
-                  : Icons.volume_down,
+              icon: _isSpeakerEnabled ? Icons.volume_up : Icons.volume_down,
               onTap: _toggleSpeaker,
-              backgroundColor: _isSpeakerEnabled
-                  ? Colors.blue
-                  : Colors.white24,
+              backgroundColor: _isSpeakerEnabled ? Colors.blue : Colors.white24,
             ),
 
           // Video toggle button (video calls only)
           if (widget.isVideoCall)
             _buildControlButton(
-              icon: _isVideoEnabled
-                  ? Icons.videocam
-                  : Icons.videocam_off,
+              icon: _isVideoEnabled ? Icons.videocam : Icons.videocam_off,
               onTap: _toggleVideo,
-              backgroundColor: _isVideoEnabled
-                  ? Colors.blue
-                  : Colors.red,
+              backgroundColor: _isVideoEnabled ? Colors.blue : Colors.red,
             ),
 
           // Camera switch button (video calls only)

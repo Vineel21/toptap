@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shortzz/common/config/agora_config.dart';
+import 'package:shortzz/common/extensions/string_extension.dart';
 import 'package:shortzz/common/manager/call_state_manager.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/screen/call_screen/call_screen.dart';
@@ -22,12 +23,10 @@ class IncomingCallScreen extends StatefulWidget {
   });
 
   @override
-  State<IncomingCallScreen> createState() =>
-      _IncomingCallScreenState();
+  State<IncomingCallScreen> createState() => _IncomingCallScreenState();
 }
 
-class _IncomingCallScreenState
-    extends State<IncomingCallScreen> {
+class _IncomingCallScreenState extends State<IncomingCallScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,11 +53,8 @@ class _IncomingCallScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                widget.isVideoCall
-                    ? 'Video call'
-                    : 'Voice call',
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 16),
+                widget.isVideoCall ? 'Video call' : 'Voice call',
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
               const Spacer(),
 
@@ -73,13 +69,11 @@ class _IncomingCallScreenState
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(30),
                           ),
                         ),
                         onPressed: _declineCall,
-                        icon: const Icon(Icons.call_end,
-                            size: 24),
+                        icon: const Icon(Icons.call_end, size: 24),
                         label: const Text('Decline',
                             style: TextStyle(fontSize: 16)),
                       ),
@@ -94,15 +88,12 @@ class _IncomingCallScreenState
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(30),
                           ),
                         ),
                         onPressed: _acceptCall,
                         icon: Icon(
-                          widget.isVideoCall
-                              ? Icons.videocam
-                              : Icons.call,
+                          widget.isVideoCall ? Icons.videocam : Icons.call,
                           size: 24,
                         ),
                         label: const Text('Accept',
@@ -122,11 +113,9 @@ class _IncomingCallScreenState
 
   Future<void> _acceptCall() async {
     if (widget.callId?.isNotEmpty ?? false) {
-      await CallStateManager.instance.acceptCall(
-          widget.callId!);
+      await CallStateManager.instance.acceptCall(widget.callId!);
     }
-    final effectiveChannel =
-        AgoraConfig.effectiveChannelId(widget.channelId);
+    final effectiveChannel = AgoraConfig.effectiveChannelId(widget.channelId);
 
     // Navigate to the call screen
     Get.off(() => CallScreen(
@@ -158,13 +147,12 @@ class _IncomingCallScreenState
       child: ClipOval(
         child: (widget.caller.profilePhoto ?? '').isNotEmpty
             ? Image.network(
-                widget.caller.profilePhoto!,
+                widget.caller.profilePhoto!.addBaseURL(),
                 fit: BoxFit.cover,
               )
             : Container(
                 color: Colors.grey.shade700,
-                child: const Icon(Icons.person,
-                    color: Colors.white, size: 72),
+                child: const Icon(Icons.person, color: Colors.white, size: 72),
               ),
       ),
     );

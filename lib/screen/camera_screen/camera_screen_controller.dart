@@ -104,6 +104,7 @@ class CameraScreenController extends BaseController
   // Private variables
   Timer? _progressTimer;
   Completer<void>? _cameraOperationCompleter;
+  DateTime? _recordingStartedAt;
 
   CameraScreenController(this.cameraType, this.selectedMusic);
 
@@ -448,12 +449,16 @@ class CameraScreenController extends BaseController
 
     try {
       await deepArControllerPlus.value.startVideoRecording();
+      _recordingStartedAt = DateTime.now();
       _startAudioPlayback();
       isRecording.value = true;
       isStartingRecording.value = true;
+      Loggers.info(
+          'Video recording started. targetDurationSec=${selectedSecond.value}');
       _startProgressTimer();
     } catch (e) {
       Loggers.error("Video recording start error: $e");
+      showSnackBar('Unable to start video recording. Please try again.');
     }
   }
 
@@ -506,9 +511,24 @@ class CameraScreenController extends BaseController
           break;
       }
 
+      final elapsedSec = _recordingStartedAt == null
+          ? null
+          : DateTime.now().difference(_recordingStartedAt!).inSeconds;
+      Loggers.info(
+          'Video recording finalized successfully. targetDurationSec=${selectedSecond.value}, elapsedSec=${elapsedSec ?? -1}, outputPath=${file.path}');
+      _recordingStartedAt = null;
       selectedMusic.value = null;
     } catch (e) {
+      stopLoader();
+      final elapsedSec = _recordingStartedAt == null
+          ? null
+          : DateTime.now().difference(_recordingStartedAt!).inSeconds;
       Loggers.error("Video recording stop error: $e");
+      Loggers.error(
+          'Video finalize failed. targetDurationSec=${selectedSecond.value}, elapsedSec=${elapsedSec ?? -1}');
+      _recordingStartedAt = null;
+      showSnackBar(
+          'Video finalize failed. Please try again. If the issue repeats, use a shorter duration.');
     }
   }
 

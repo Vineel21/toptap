@@ -40,12 +40,18 @@ class DeepArPlatformHandler {
       MethodChannel(PlatformStrings.generalChannel);
   static const MethodChannel _cameraXChannel =
       MethodChannel(PlatformStrings.cameraXChannel);
+  static const Duration _videoStopTimeout = Duration(seconds: 30);
+  static const Duration _screenshotTimeout = Duration(seconds: 8);
   MethodChannel _avCameraChannel(int view) =>
       MethodChannel('${PlatformStrings.avCameraChannel}/$view');
   static VideoResponse? _videoResponse;
   static String? _videoFilePath;
   static ScreenshotResponse? _screenshotResponse;
   static String? _screenshotFilePath;
+  static Completer<String?>? _pendingVideoCompleter;
+  static Timer? _pendingVideoTimeoutTimer;
+  static Completer<String?>? _pendingScreenshotCompleter;
+  static Timer? _pendingScreenshotTimeoutTimer;
   static final StreamController<CameraHealthEvent> _cameraHealthController =
       StreamController<CameraHealthEvent>.broadcast();
 
@@ -79,6 +85,15 @@ class DeepArPlatformHandler {
           _videoFilePath = null;
         }
 
+        if (_pendingVideoCompleter != null &&
+            !(_pendingVideoCompleter?.isCompleted ?? true)) {
+          if (_videoResponse == VideoResponse.videoCompleted) {
+            _pendingVideoCompleter?.complete(_videoFilePath);
+          } else if (_videoResponse == VideoResponse.videoError) {
+            _pendingVideoCompleter?.complete("ENDED_WITH_ERROR");
+          }
+        }
+
         break;
       case "on_screenshot_result":
         final caller = data['caller'];
@@ -91,6 +106,15 @@ class DeepArPlatformHandler {
           _screenshotFilePath = filePath;
         } else {
           _screenshotFilePath = null;
+        }
+
+        if (_pendingScreenshotCompleter != null &&
+            !(_pendingScreenshotCompleter?.isCompleted ?? true)) {
+          if (_screenshotResponse == ScreenshotResponse.screenshotTaken) {
+            _pendingScreenshotCompleter?.complete(_screenshotFilePath);
+          } else {
+            _pendingScreenshotCompleter?.complete("ENDED_WITH_ERROR");
+          }
         }
 
         break;
@@ -166,26 +190,7 @@ class DeepArPlatformHandler {
 
   Future<String?> stopRecordingVideoAndroid() async {
     await _channel.invokeMethod(PlatformStrings.stopRecordingVideo);
-    final Completer completer = Completer<String>();
-    Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      if (timer.tick > 20) {
-        completer.complete("ENDED_WITH_ERROR");
-        _videoFilePath = null;
-        _videoResponse = null;
-        timer.cancel();
-      } else if (_videoResponse == VideoResponse.videoCompleted) {
-        completer.complete(_videoFilePath);
-        _videoFilePath = null;
-        _videoResponse = null;
-        timer.cancel();
-      } else if (_videoResponse == VideoResponse.videoError) {
-        completer.complete("ENDED_WITH_ERROR");
-        _videoFilePath = null;
-        _videoResponse = null;
-        timer.cancel();
-      }
-    });
-    return completer.future.then((value) => value);
+    return _waitForVideoResult(timeout: _videoStopTimeout);
   }
 
   Future<void> startRecordingVideoIos(int view) async {
@@ -196,26 +201,7 @@ class DeepArPlatformHandler {
   Future<String?> stopRecordingVideoIos(int view) async {
     await _avCameraChannel(view)
         .invokeMethod<String>(PlatformStrings.stopRecordingVideo);
-    final Completer completer = Completer<String>();
-    Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      if (timer.tick > 20) {
-        completer.complete("ENDED_WITH_ERROR");
-        _videoFilePath = null;
-        _videoResponse = null;
-        timer.cancel();
-      } else if (_videoResponse == VideoResponse.videoCompleted) {
-        completer.complete(_videoFilePath);
-        _videoFilePath = null;
-        _videoResponse = null;
-        timer.cancel();
-      } else if (_videoResponse == VideoResponse.videoError) {
-        completer.complete("ENDED_WITH_ERROR");
-        _videoFilePath = null;
-        _videoResponse = null;
-        timer.cancel();
-      }
-    });
-    return completer.future.then((value) => value);
+    return _waitForVideoResult(timeout: _videoStopTimeout);
   }
 
   Future<String?> getResolutionDimensions(int view) async {
@@ -234,40 +220,12 @@ class DeepArPlatformHandler {
 
   Future<String?> takeScreenShot() async {
     await _channel.invokeMethod("take_screenshot");
-    final Completer<String> completer = Completer<String>();
-    Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      if (timer.tick > 20) {
-        completer.complete("ENDED_WITH_ERROR");
-        _screenshotFilePath = null;
-        _screenshotResponse = null;
-        timer.cancel();
-      } else if (_screenshotResponse == ScreenshotResponse.screenshotTaken) {
-        completer.complete(_screenshotFilePath);
-        _screenshotFilePath = null;
-        _screenshotResponse = null;
-        timer.cancel();
-      }
-    });
-    return completer.future.then((value) => value);
+    return _waitForScreenshotResult(timeout: _screenshotTimeout);
   }
 
   Future<String?> takeScreenShotIos(int view) async {
     await _avCameraChannel(view).invokeMethod<String>("take_screenshot");
-    final Completer<String> completer = Completer<String>();
-    Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      if (timer.tick > 20) {
-        completer.complete("ENDED_WITH_ERROR");
-        _screenshotFilePath = null;
-        _screenshotResponse = null;
-        timer.cancel();
-      } else if (_screenshotResponse == ScreenshotResponse.screenshotTaken) {
-        completer.complete(_screenshotFilePath);
-        _screenshotFilePath = null;
-        _screenshotResponse = null;
-        timer.cancel();
-      }
-    });
-    return completer.future.then((value) => value);
+    return _waitForScreenshotResult(timeout: _screenshotTimeout);
   }
 
   Future<bool> toggleFlash() async {
@@ -371,5 +329,77 @@ class DeepArPlatformHandler {
 
   Future<void> changeParameterIos(int view, Map<String, dynamic> arguments) {
     return _avCameraChannel(view).invokeMethod("changeParameter", arguments);
+  }
+
+  Future<String?> _waitForVideoResult({required Duration timeout}) {
+    if (_videoResponse == VideoResponse.videoCompleted) {
+      final cachedPath = _videoFilePath;
+      _clearVideoResultState();
+      return Future.value(cachedPath);
+    }
+    if (_videoResponse == VideoResponse.videoError) {
+      _clearVideoResultState();
+      return Future.value("ENDED_WITH_ERROR");
+    }
+
+    if (_pendingVideoCompleter != null &&
+        !(_pendingVideoCompleter?.isCompleted ?? true)) {
+      _pendingVideoCompleter?.complete("ENDED_WITH_ERROR");
+    }
+
+    final completer = Completer<String?>();
+    _pendingVideoCompleter = completer;
+    _pendingVideoTimeoutTimer?.cancel();
+    _pendingVideoTimeoutTimer = Timer(timeout, () {
+      if (!completer.isCompleted) {
+        completer.complete("ENDED_WITH_ERROR");
+      }
+    });
+
+    return completer.future.whenComplete(() {
+      _pendingVideoTimeoutTimer?.cancel();
+      _pendingVideoTimeoutTimer = null;
+      _pendingVideoCompleter = null;
+      _clearVideoResultState();
+    });
+  }
+
+  Future<String?> _waitForScreenshotResult({required Duration timeout}) {
+    if (_screenshotResponse == ScreenshotResponse.screenshotTaken) {
+      final cachedPath = _screenshotFilePath;
+      _clearScreenshotResultState();
+      return Future.value(cachedPath);
+    }
+
+    if (_pendingScreenshotCompleter != null &&
+        !(_pendingScreenshotCompleter?.isCompleted ?? true)) {
+      _pendingScreenshotCompleter?.complete("ENDED_WITH_ERROR");
+    }
+
+    final completer = Completer<String?>();
+    _pendingScreenshotCompleter = completer;
+    _pendingScreenshotTimeoutTimer?.cancel();
+    _pendingScreenshotTimeoutTimer = Timer(timeout, () {
+      if (!completer.isCompleted) {
+        completer.complete("ENDED_WITH_ERROR");
+      }
+    });
+
+    return completer.future.whenComplete(() {
+      _pendingScreenshotTimeoutTimer?.cancel();
+      _pendingScreenshotTimeoutTimer = null;
+      _pendingScreenshotCompleter = null;
+      _clearScreenshotResultState();
+    });
+  }
+
+  void _clearVideoResultState() {
+    _videoFilePath = null;
+    _videoResponse = null;
+  }
+
+  void _clearScreenshotResultState() {
+    _screenshotFilePath = null;
+    _screenshotResponse = null;
   }
 }

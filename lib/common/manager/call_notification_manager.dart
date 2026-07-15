@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -15,8 +16,7 @@ import 'package:shortzz/screen/call_screen/call_screen.dart';
 /// Handles incoming call notifications with full-screen UI, ringtones, and proper lifecycle management
 class CallNotificationManager {
   CallNotificationManager._();
-  static final CallNotificationManager instance =
-      CallNotificationManager._();
+  static final CallNotificationManager instance = CallNotificationManager._();
 
   // Notification plugin instance (injected from FirebaseNotificationManager)
   FlutterLocalNotificationsPlugin? _notificationPlugin;
@@ -24,8 +24,7 @@ class CallNotificationManager {
   // Call state management
   final Rx<CallNotificationState> _currentState =
       CallNotificationState.idle.obs;
-  final RxMap<String, IncomingCallData>
-      _activeIncomingCalls =
+  final RxMap<String, IncomingCallData> _activeIncomingCalls =
       <String, IncomingCallData>{}.obs;
 
   // Timers and resources
@@ -34,23 +33,17 @@ class CallNotificationManager {
   bool _isInitialized = false;
 
   // Getters
-  CallNotificationState get currentState =>
-      _currentState.value;
-  Map<String, IncomingCallData> get activeIncomingCalls =>
-      _activeIncomingCalls;
-  bool get hasActiveIncomingCall =>
-      _activeIncomingCalls.isNotEmpty;
+  CallNotificationState get currentState => _currentState.value;
+  Map<String, IncomingCallData> get activeIncomingCalls => _activeIncomingCalls;
+  bool get hasActiveIncomingCall => _activeIncomingCalls.isNotEmpty;
   bool get isInitialized => _isInitialized;
 
-  FlutterLocalNotificationsPlugin
-      get _notificationsPlugin {
-    _notificationPlugin ??=
-        FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin get _notificationsPlugin {
+    _notificationPlugin ??= FlutterLocalNotificationsPlugin();
     return _notificationPlugin!;
   }
 
-  void configureNotificationPlugin(
-      FlutterLocalNotificationsPlugin plugin) {
+  void configureNotificationPlugin(FlutterLocalNotificationsPlugin plugin) {
     _notificationPlugin = plugin;
   }
 
@@ -59,8 +52,7 @@ class CallNotificationManager {
     if (_isInitialized) return;
 
     try {
-      Loggers.info(
-          '📞 Initializing Call Notification Manager...');
+      Loggers.info('📞 Initializing Call Notification Manager...');
 
       // Initialize notification plugin
       await _initializeNotifications();
@@ -72,8 +64,7 @@ class CallNotificationManager {
       Loggers.success(
           '📞 ✅ Call Notification Manager initialized successfully');
     } catch (e) {
-      Loggers.error(
-          '📞 ❌ Failed to initialize Call Notification Manager: $e');
+      Loggers.error('📞 ❌ Failed to initialize Call Notification Manager: $e');
       rethrow;
     }
   }
@@ -85,12 +76,10 @@ class CallNotificationManager {
     }
     // Android initialization
     const androidInitializationSettings =
-        AndroidInitializationSettings(
-            '@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     // iOS initialization
-    const iosInitializationSettings =
-        DarwinInitializationSettings(
+    const iosInitializationSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
@@ -101,8 +90,7 @@ class CallNotificationManager {
       iOS: iosInitializationSettings,
     );
 
-    await _notificationsPlugin
-        .initialize(initializationSettings);
+    await _notificationsPlugin.initialize(initializationSettings);
   }
 
   /// Create notification channels for different call types
@@ -111,8 +99,7 @@ class CallNotificationManager {
     const incomingCallChannel = AndroidNotificationChannel(
       'incoming_call_channel',
       'Incoming Calls',
-      description:
-          'Notifications for incoming voice and video calls',
+      description: 'Notifications for incoming voice and video calls',
       importance: Importance.max,
       enableLights: true,
       ledColor: Colors.green,
@@ -173,8 +160,7 @@ class CallNotificationManager {
 
       // Store active call and record in state manager
       _activeIncomingCalls[callId] = callData;
-      _currentState.value =
-          CallNotificationState.incomingCall;
+      _currentState.value = CallNotificationState.incomingCall;
 
       // Record call in state manager
       await CallStateManager.instance.recordIncomingCall(
@@ -192,8 +178,7 @@ class CallNotificationManager {
       _callTimeoutTimer?.cancel();
       _callTimeoutTimer = Timer(timeout, () async {
         Loggers.info('📞 Call timeout for $callId');
-        await CallStateManager.instance
-            .missCall(callId, reason: 'timeout');
+        await CallStateManager.instance.missCall(callId, reason: 'timeout');
         declineCall(callId, reason: 'timeout');
       });
 
@@ -204,8 +189,7 @@ class CallNotificationManager {
       await _showFullScreenNotification(callData);
 
       // Show enhanced incoming call screen if app is in foreground
-      if (WidgetsBinding.instance.lifecycleState ==
-          AppLifecycleState.resumed) {
+      if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
         unawaited(_showIncomingCallScreen(callData));
       }
     } catch (e) {
@@ -214,25 +198,22 @@ class CallNotificationManager {
   }
 
   /// Show full-screen notification for incoming call
-  Future<void> _showFullScreenNotification(
-      IncomingCallData callData) async {
+  Future<void> _showFullScreenNotification(IncomingCallData callData) async {
     try {
       final caller = callData.caller;
       final isVideo = callData.isVideoCall;
+      final localProfilePhoto =
+          _localNotificationImagePath(caller.profilePhoto);
 
       // Create big picture for caller photo
       BigPictureStyleInformation? bigPictureStyle;
-      if (caller.profilePhoto?.isNotEmpty == true) {
+      if (localProfilePhoto != null) {
         try {
-          // Note: In production, you'd want to download and cache the image
           bigPictureStyle = BigPictureStyleInformation(
-            FilePathAndroidBitmap(caller.profilePhoto!),
-            largeIcon:
-                FilePathAndroidBitmap(caller.profilePhoto!),
-            contentTitle:
-                caller.fullname ?? 'Incoming Call',
-            summaryText:
-                isVideo ? 'Video Call' : 'Voice Call',
+            FilePathAndroidBitmap(localProfilePhoto),
+            largeIcon: FilePathAndroidBitmap(localProfilePhoto),
+            contentTitle: caller.fullname ?? 'Incoming Call',
+            summaryText: isVideo ? 'Video Call' : 'Voice Call',
           );
         } catch (_) {
           // Fallback if image loading fails
@@ -253,10 +234,8 @@ class CallNotificationManager {
         colorized: true,
         color: isVideo ? Colors.blue : Colors.green,
         largeIcon: caller.profilePhoto?.isNotEmpty == true
-            ? const DrawableResourceAndroidBitmap(
-                '@mipmap/ic_launcher')
-            : const DrawableResourceAndroidBitmap(
-                '@mipmap/ic_launcher'),
+            ? const DrawableResourceAndroidBitmap('@mipmap/ic_launcher')
+            : const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         styleInformation: bigPictureStyle,
         actions: [
           AndroidNotificationAction(
@@ -288,9 +267,7 @@ class CallNotificationManager {
       await _notificationsPlugin.show(
         callData.callId.hashCode,
         caller.fullname ?? 'Incoming Call',
-        isVideo
-            ? 'Incoming video call'
-            : 'Incoming voice call',
+        isVideo ? 'Incoming video call' : 'Incoming voice call',
         NotificationDetails(
           android: androidDetails,
           iOS: iosDetails,
@@ -298,28 +275,35 @@ class CallNotificationManager {
         payload: jsonEncode(callData.toJson()),
       );
 
-      Loggers.success(
-          '📞 ✅ Full-screen notification displayed');
+      Loggers.success('📞 ✅ Full-screen notification displayed');
     } catch (e) {
-      Loggers.error(
-          '📞 ❌ Error showing full-screen notification: $e');
+      Loggers.error('📞 ❌ Error showing full-screen notification: $e');
     }
   }
 
+  String? _localNotificationImagePath(String? path) {
+    final value = path?.trim() ?? '';
+    if (value.isEmpty) return null;
+
+    final uri = Uri.tryParse(value);
+    if (uri != null && uri.hasScheme) {
+      return uri.scheme == 'file' ? uri.toFilePath() : null;
+    }
+
+    return File(value).isAbsolute ? value : null;
+  }
+
   /// Show incoming call screen
-  Future<void> _showIncomingCallScreen(
-      IncomingCallData callData) async {
+  Future<void> _showIncomingCallScreen(IncomingCallData callData) async {
     try {
       await Get.to(
-        () =>
-            EnhancedIncomingCallScreen(callData: callData),
+        () => EnhancedIncomingCallScreen(callData: callData),
         fullscreenDialog: true,
         preventDuplicates: true,
         opaque: false,
       );
     } catch (e) {
-      Loggers.error(
-          '📞 ❌ Error showing incoming call screen: $e');
+      Loggers.error('📞 ❌ Error showing incoming call screen: $e');
     }
   }
 
@@ -333,8 +317,7 @@ class CallNotificationManager {
       // Note: flutter_ringtone_player might need additional setup
       // For now, we rely on notification channel sound
 
-      Loggers.info(
-          '📞 🔊 Ringtone started via notification');
+      Loggers.info('📞 🔊 Ringtone started via notification');
     } catch (e) {
       Loggers.error('📞 ❌ Error starting ringtone: $e');
     }
@@ -357,8 +340,7 @@ class CallNotificationManager {
     try {
       final callData = _activeIncomingCalls[callId];
       if (callData == null) {
-        Loggers.warning(
-            '📞 ⚠️ No active call found for ID: $callId');
+        Loggers.warning('📞 ⚠️ No active call found for ID: $callId');
         return;
       }
 
@@ -387,17 +369,14 @@ class CallNotificationManager {
     try {
       final callData = _activeIncomingCalls[callId];
       if (callData == null) {
-        Loggers.warning(
-            '📞 ⚠️ No active call found for ID: $callId');
+        Loggers.warning('📞 ⚠️ No active call found for ID: $callId');
         return;
       }
 
-      Loggers.info(
-          '📞 ❌ Declining call: $callId (reason: $reason)');
+      Loggers.info('📞 ❌ Declining call: $callId (reason: $reason)');
 
       // Update call state
-      await CallStateManager.instance
-          .declineCall(callId, reason: reason);
+      await CallStateManager.instance.declineCall(callId, reason: reason);
 
       // Stop ringtone and cleanup
       await _stopRingtone();
@@ -413,8 +392,7 @@ class CallNotificationManager {
   }
 
   /// Navigate to call screen
-  Future<void> _navigateToCallScreen(
-      IncomingCallData callData) async {
+  Future<void> _navigateToCallScreen(IncomingCallData callData) async {
     try {
       // Directly navigate without deferred import to avoid runtime errors on accept
       await Get.off(() => CallScreen(
@@ -424,8 +402,7 @@ class CallNotificationManager {
             token: callData.token,
           ));
     } catch (e) {
-      Loggers.error(
-          '📞 ❌ Error navigating to call screen: $e');
+      Loggers.error('📞 ❌ Error navigating to call screen: $e');
     }
   }
 
@@ -436,8 +413,7 @@ class CallNotificationManager {
       _activeIncomingCalls.remove(callId);
 
       // Cancel notification
-      await _notificationsPlugin
-          .cancel(callId.hashCode);
+      await _notificationsPlugin.cancel(callId.hashCode);
 
       // Cancel timers
       _callTimeoutTimer?.cancel();
@@ -448,37 +424,31 @@ class CallNotificationManager {
         await WakelockPlus.disable();
       }
 
-      Loggers.info(
-          '📞 🧹 Cleaned up call resources for: $callId');
+      Loggers.info('📞 🧹 Cleaned up call resources for: $callId');
     } catch (e) {
       Loggers.error('📞 ❌ Error cleaning up call: $e');
     }
   }
 
   /// Public bridge for action handling from FirebaseNotificationManager.
-  void handleNotificationActionPayload(
-      String? payload, String? actionId) {
+  void handleNotificationActionPayload(String? payload, String? actionId) {
     _handleNotificationAction(payload, actionId);
   }
 
   /// Handle notification actions (Accept/Decline)
-  void _handleNotificationAction(
-      String? payload, String? actionId) {
+  void _handleNotificationAction(String? payload, String? actionId) {
     try {
       if (payload == null || actionId == null) return;
 
-      final callData =
-          IncomingCallData.fromJson(jsonDecode(payload));
+      final callData = IncomingCallData.fromJson(jsonDecode(payload));
 
       if (actionId.startsWith('ACCEPT_CALL_')) {
         acceptCall(callData.callId);
       } else if (actionId.startsWith('DECLINE_CALL_')) {
-        declineCall(callData.callId,
-            reason: 'notification_declined');
+        declineCall(callData.callId, reason: 'notification_declined');
       }
     } catch (e) {
-      Loggers.error(
-          '📞 ❌ Error handling notification action: $e');
+      Loggers.error('📞 ❌ Error handling notification action: $e');
     }
   }
 
@@ -492,8 +462,7 @@ class CallNotificationManager {
       _callTimeoutTimer?.cancel();
 
       // Cleanup all active calls
-      for (final callId
-          in _activeIncomingCalls.keys.toList()) {
+      for (final callId in _activeIncomingCalls.keys.toList()) {
         await _cleanupCall(callId);
       }
 
@@ -501,11 +470,9 @@ class CallNotificationManager {
       await WakelockPlus.disable();
 
       _isInitialized = false;
-      Loggers.info(
-          '📞 🗑️ Call Notification Manager disposed');
+      Loggers.info('📞 🗑️ Call Notification Manager disposed');
     } catch (e) {
-      Loggers.error(
-          '📞 ❌ Error disposing Call Notification Manager: $e');
+      Loggers.error('📞 ❌ Error disposing Call Notification Manager: $e');
     }
   }
 }
@@ -545,17 +512,14 @@ class IncomingCallData {
         'timestamp': timestamp.toIso8601String(),
       };
 
-  factory IncomingCallData.fromJson(
-          Map<String, dynamic> json) =>
+  factory IncomingCallData.fromJson(Map<String, dynamic> json) =>
       IncomingCallData(
         callId: json['callId'] ?? '',
         caller: User.fromJson(json['caller'] ?? {}),
         channelId: json['channelId'] ?? '',
         isVideoCall: json['isVideoCall'] ?? false,
         token: json['token'],
-        timestamp:
-            DateTime.tryParse(json['timestamp'] ?? '') ??
-                DateTime.now(),
+        timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
       );
 }
 
@@ -563,6 +527,5 @@ class IncomingCallData {
 Future<dynamic> import(String library) async {
   // This is a placeholder for dynamic imports
   // In production, you'd implement proper dynamic loading
-  throw UnimplementedError(
-      'Dynamic import not implemented');
+  throw UnimplementedError('Dynamic import not implemented');
 }

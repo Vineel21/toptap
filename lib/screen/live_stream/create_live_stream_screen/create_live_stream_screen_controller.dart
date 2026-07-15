@@ -6,6 +6,7 @@ import 'package:shortzz/common/controller/base_controller.dart';
 import 'package:shortzz/common/extensions/user_extension.dart';
 import 'package:shortzz/common/manager/logger.dart';
 import 'package:shortzz/common/manager/session_manager.dart';
+import 'package:shortzz/common/service/zego_engine_service.dart';
 import 'package:shortzz/common/widget/confirmation_dialog.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/general/settings_model.dart';
@@ -17,27 +18,23 @@ import 'package:shortzz/screen/live_stream/livestream_screen/host/livestream_hos
 import 'package:shortzz/utilities/firebase_const.dart';
 import 'package:zego_express_engine/zego_express_engine.dart';
 
-class CreateLiveStreamScreenController
-    extends BaseController {
+class CreateLiveStreamScreenController extends BaseController {
   RxBool isRestricted = false.obs;
   RxBool hasLiveGoal = false.obs;
   RxString liveGoalTitle = ''.obs;
   RxInt liveGoalTargetAmount = 0.obs;
-  RxString liveGoalType =
-      'followers'.obs; // followers, likes, gifts, duration
+  RxString liveGoalType = 'followers'.obs; // followers, likes, gifts, duration
   bool isFrontCamera = true;
   FirebaseFirestore db = FirebaseFirestore.instance;
   ZegoExpressEngine zegoEngine = ZegoExpressEngine.instance;
 
-  Rx<User?> get myUser =>
-      SessionManager.instance.getUser().obs;
+  Rx<User?> get myUser => SessionManager.instance.getUser().obs;
 
-  Setting? get _setting =>
-      SessionManager.instance.getSettings();
+  Setting? get _setting => SessionManager.instance.getSettings();
   Rx<Widget?> localView = Rx(null);
   RxInt localViewID = RxInt(-1);
-  TextEditingController titleController =
-      TextEditingController();
+  TextEditingController titleController = TextEditingController();
+  Future<void>? _previewInitFuture;
 
   @override
   void onInit() {
@@ -54,50 +51,64 @@ class CreateLiveStreamScreenController
   Future<bool> requestPermission() async {
     Loggers.info("requestPermission...");
     try {
-      PermissionStatus microphoneStatus =
-          await Permission.microphone.request();
+      PermissionStatus microphoneStatus = await Permission.microphone.request();
       if (microphoneStatus != PermissionStatus.granted) {
-        Loggers.error(
-            'Error: Microphone permission not granted!!!');
+        Loggers.error('Error: Microphone permission not granted!!!');
         return false;
       }
     } on Exception catch (error) {
-      Loggers.error(
-          "[ERROR], request microphone permission exception, $error");
+      Loggers.error("[ERROR], request microphone permission exception, $error");
       return false;
     }
 
     try {
-      PermissionStatus cameraStatus =
-          await Permission.camera.request();
+      PermissionStatus cameraStatus = await Permission.camera.request();
       if (cameraStatus != PermissionStatus.granted) {
-        Loggers.error(
-            '[Error]: Camera permission not granted!!!');
+        Loggers.error('[Error]: Camera permission not granted!!!');
         return false;
       }
     } on Exception catch (error) {
-      Loggers.error(
-          "[ERROR], request camera permission exception, $error");
+      Loggers.error("[ERROR], request camera permission exception, $error");
       return false;
     }
 
     return true;
   }
 
-  void initZegoEngine() async {
+  Future<void> initZegoEngine() async {
     bool isPermissionGranted = await requestPermission();
     if (isPermissionGranted) {
+      bool isEngineReady = await ZegoEngineService.instance.ensureEngine();
+      if (!isEngineReady) {
+        showSnackBar('Unable to initialize live stream. Please try again.');
+        return;
+      }
+      zegoEngine = ZegoExpressEngine.instance;
       await initializeCameraPreview();
     } else {
       Get.bottomSheet(ConfirmationSheet(
           title: LKey.cameraMicrophonePermissionTitle.tr,
-          description:
-              LKey.cameraMicrophonePermissionDescription.tr,
+          description: LKey.cameraMicrophonePermissionDescription.tr,
           onTap: openAppSettings));
     }
   }
 
   Future<void> initializeCameraPreview() async {
+    if (localView.value != null) return;
+    if (_previewInitFuture != null) {
+      await _previewInitFuture;
+      return;
+    }
+
+    _previewInitFuture = _initializeCameraPreview();
+    try {
+      await _previewInitFuture;
+    } finally {
+      _previewInitFuture = null;
+    }
+  }
+
+  Future<void> _initializeCameraPreview() async {
     try {
       showLoader();
       // Enable the front camera and un-mute audio streams
@@ -106,8 +117,7 @@ class CreateLiveStreamScreenController
       zegoEngine.muteMicrophone(false);
 
       // Use the front camera for the main publishing channel
-      zegoEngine.useFrontCamera(true,
-          channel: ZegoPublishChannel.Main);
+      zegoEngine.useFrontCamera(true, channel: ZegoPublishChannel.Main);
 
       // Create a canvas view for local video preview
       await zegoEngine.createCanvasView((viewID) async {
@@ -115,8 +125,8 @@ class CreateLiveStreamScreenController
         Loggers.info('LOCAL VIEW ID : $localViewID');
 
         // Set up the preview canvas with aspect fill mode
-        ZegoCanvas previewCanvas = ZegoCanvas(viewID,
-            viewMode: ZegoViewMode.AspectFill);
+        ZegoCanvas previewCanvas =
+            ZegoCanvas(viewID, viewMode: ZegoViewMode.AspectFill);
         zegoEngine.startPreview(canvas: previewCanvas);
       }).then((canvasViewWidget) {
         // Assign the preview widget to a reactive variable
@@ -124,8 +134,7 @@ class CreateLiveStreamScreenController
       });
     } catch (e, stackTrace) {
       // Log any errors during the preview setup
-      Loggers.error(
-          'Failed to initialize camera preview: $e\n$stackTrace');
+      Loggers.error('Failed to initialize camera preview: $e\n$stackTrace');
     } finally {
       stopLoader();
     }
@@ -133,8 +142,7 @@ class CreateLiveStreamScreenController
 
   void toggleCamera() {
     isFrontCamera = !isFrontCamera;
-    zegoEngine.useFrontCamera(isFrontCamera,
-        channel: ZegoPublishChannel.Main);
+    zegoEngine.useFrontCamera(isFrontCamera, channel: ZegoPublishChannel.Main);
   }
 
   void onCloseTap() {
@@ -159,9 +167,7 @@ class CreateLiveStreamScreenController
           backgroundColor: Colors.grey[900],
           title: Text(
             'Remove Live Goal?',
-            style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
           content: Text(
             'Do you want to remove your current live goal?',
@@ -170,8 +176,7 @@ class CreateLiveStreamScreenController
           actions: [
             TextButton(
               onPressed: () => Get.back(),
-              child: Text('Cancel',
-                  style: TextStyle(color: Colors.grey)),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () {
@@ -180,8 +185,7 @@ class CreateLiveStreamScreenController
                 liveGoalTargetAmount.value = 0;
                 Get.back();
               },
-              child: Text('Remove',
-                  style: TextStyle(color: Colors.red)),
+              child: Text('Remove', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -214,8 +218,7 @@ class CreateLiveStreamScreenController
             // Header
             Row(
               children: [
-                Icon(Icons.flag,
-                    color: Colors.orange, size: 24),
+                Icon(Icons.flag, color: Colors.orange, size: 24),
                 SizedBox(width: 12),
                 Text(
                   'Set Live Goal',
@@ -228,8 +231,7 @@ class CreateLiveStreamScreenController
                 Spacer(),
                 IconButton(
                   onPressed: () => Get.back(),
-                  icon: Icon(Icons.close,
-                      color: Colors.white),
+                  icon: Icon(Icons.close, color: Colors.white),
                 ),
               ],
             ),
@@ -258,8 +260,8 @@ class CreateLiveStreamScreenController
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
 
@@ -285,19 +287,17 @@ class CreateLiveStreamScreenController
                       value: selectedGoalType.value,
                       dropdownColor: Colors.grey[800],
                       isExpanded: true,
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       style: TextStyle(color: Colors.white),
-                      icon: Icon(Icons.keyboard_arrow_down,
-                          color: Colors.white),
+                      icon:
+                          Icon(Icons.keyboard_arrow_down, color: Colors.white),
                       items: [
                         DropdownMenuItem(
                           value: 'followers',
                           child: Row(
                             children: [
                               Icon(Icons.person_add,
-                                  color: Colors.blue,
-                                  size: 20),
+                                  color: Colors.blue, size: 20),
                               SizedBox(width: 8),
                               Text('New Followers'),
                             ],
@@ -307,9 +307,7 @@ class CreateLiveStreamScreenController
                           value: 'likes',
                           child: Row(
                             children: [
-                              Icon(Icons.favorite,
-                                  color: Colors.red,
-                                  size: 20),
+                              Icon(Icons.favorite, color: Colors.red, size: 20),
                               SizedBox(width: 8),
                               Text('Likes'),
                             ],
@@ -320,8 +318,7 @@ class CreateLiveStreamScreenController
                           child: Row(
                             children: [
                               Icon(Icons.card_giftcard,
-                                  color: Colors.purple,
-                                  size: 20),
+                                  color: Colors.purple, size: 20),
                               SizedBox(width: 8),
                               Text('Gifts Received'),
                             ],
@@ -331,12 +328,9 @@ class CreateLiveStreamScreenController
                           value: 'duration',
                           child: Row(
                             children: [
-                              Icon(Icons.timer,
-                                  color: Colors.green,
-                                  size: 20),
+                              Icon(Icons.timer, color: Colors.green, size: 20),
                               SizedBox(width: 8),
-                              Text(
-                                  'Live Duration (minutes)'),
+                              Text('Live Duration (minutes)'),
                             ],
                           ),
                         ),
@@ -375,8 +369,8 @@ class CreateLiveStreamScreenController
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
 
@@ -385,20 +379,12 @@ class CreateLiveStreamScreenController
             // Set Goal Button
             GestureDetector(
               onTap: () {
-                if (goalTitleController.text
-                        .trim()
-                        .isNotEmpty &&
-                    targetAmountController.text
-                        .trim()
-                        .isNotEmpty) {
-                  liveGoalTitle.value =
-                      goalTitleController.text.trim();
-                  liveGoalTargetAmount.value = int.tryParse(
-                          targetAmountController.text
-                              .trim()) ??
-                      0;
-                  liveGoalType.value =
-                      selectedGoalType.value;
+                if (goalTitleController.text.trim().isNotEmpty &&
+                    targetAmountController.text.trim().isNotEmpty) {
+                  liveGoalTitle.value = goalTitleController.text.trim();
+                  liveGoalTargetAmount.value =
+                      int.tryParse(targetAmountController.text.trim()) ?? 0;
+                  liveGoalType.value = selectedGoalType.value;
                   hasLiveGoal.value = true;
                   Get.back();
                   Get.snackbar(
@@ -422,10 +408,7 @@ class CreateLiveStreamScreenController
                 height: 50,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.orange,
-                      Colors.deepOrange
-                    ],
+                    colors: [Colors.orange, Colors.deepOrange],
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -456,8 +439,8 @@ class CreateLiveStreamScreenController
     if ((myUser.value?.followerCount ?? 0) <
         (_setting?.minFollowersForLive ?? 0)) {
       Loggers.info('Follower count check failed');
-      showSnackBar(LKey.minFollowersNeededToGoLive.trParams(
-          {'count': '${_setting?.minFollowersForLive}'}));
+      showSnackBar(LKey.minFollowersNeededToGoLive
+          .trParams({'count': '${_setting?.minFollowersForLive}'}));
       return;
     }
 
@@ -468,8 +451,7 @@ class CreateLiveStreamScreenController
 
     User? user = myUser.value;
     if (user == null) {
-      Loggers.error(
-          'User Not found. Cannot start live stream.');
+      Loggers.error('User Not found. Cannot start live stream.');
       return;
     }
     int userId = user.id ?? -1;
@@ -480,14 +462,15 @@ class CreateLiveStreamScreenController
     }
 
     if (localView.value == null) {
-      Loggers.info(
-          'Local view is null, checking camera initialization...');
-      showSnackBar('Local View not found');
-      return;
+      Loggers.info('Local view is null, checking camera initialization...');
+      await initZegoEngine();
+      if (localView.value == null) {
+        showSnackBar('Local View not found');
+        return;
+      }
     }
 
-    Loggers.info(
-        'All pre-checks passed, creating livestream...');
+    Loggers.info('All pre-checks passed, creating livestream...');
 
     // Create Livestream model
     int time = DateTime.now().millisecondsSinceEpoch;
@@ -506,18 +489,12 @@ class CreateLiveStreamScreenController
             restrictToJoin: isRestricted.value ? 1 : 0,
             hostViewId: localViewID.value,
             hasLiveGoal: hasLiveGoal.value,
-            liveGoalTitle: hasLiveGoal.value
-                ? liveGoalTitle.value
-                : null,
-            liveGoalType: hasLiveGoal.value
-                ? liveGoalType.value
-                : null,
-            liveGoalTargetAmount: hasLiveGoal.value
-                ? liveGoalTargetAmount.value
-                : null);
+            liveGoalTitle: hasLiveGoal.value ? liveGoalTitle.value : null,
+            liveGoalType: hasLiveGoal.value ? liveGoalType.value : null,
+            liveGoalTargetAmount:
+                hasLiveGoal.value ? liveGoalTargetAmount.value : null);
       } catch (e) {
-        Loggers.error(
-            'Error creating livestream with goals: $e');
+        Loggers.error('Error creating livestream with goals: $e');
         // Fallback: create without live goal parameters
         livestream = user.livestream(
             type: LivestreamType.livestream,
@@ -535,31 +512,23 @@ class CreateLiveStreamScreenController
 
       // Create LivestreamUser model
       LivestreamUserState livestreamUserState =
-          user.streamState(
-              time: time,
-              stateType: LivestreamUserType.host);
+          user.streamState(time: time, stateType: LivestreamUserType.host);
 
       Loggers.info('LivestreamUserState model created');
       Loggers.info('Starting live stream...');
-      Loggers.info(
-          'Livestream Model: ${livestream.toJson()}');
-      Loggers.info(
-          'Livestream User Model: ${livestreamUser.toJson()}');
+      Loggers.info('Livestream Model: ${livestream.toJson()}');
+      Loggers.info('Livestream User Model: ${livestreamUser.toJson()}');
 
       // Show loader before Firestore operations
       showLoader();
-      Loggers.info(
-          'Loader shown, starting Firestore operations...');
+      Loggers.info('Loader shown, starting Firestore operations...');
 
-      DocumentReference livestreamRef = db
-          .collection(FirebaseConst.liveStreams)
-          .doc('$userId');
-      DocumentReference usersRef = db
-          .collection(FirebaseConst.appUsers)
-          .doc('$userId');
-      DocumentReference userStateRef = livestreamRef
-          .collection(FirebaseConst.userState)
-          .doc('$userId');
+      DocumentReference livestreamRef =
+          db.collection(FirebaseConst.liveStreams).doc('$userId');
+      DocumentReference usersRef =
+          db.collection(FirebaseConst.appUsers).doc('$userId');
+      DocumentReference userStateRef =
+          livestreamRef.collection(FirebaseConst.userState).doc('$userId');
 
       WriteBatch batch = db.batch();
 
@@ -567,8 +536,7 @@ class CreateLiveStreamScreenController
       batch.set(usersRef, livestreamUser.toJson());
       batch.set(userStateRef, livestreamUserState.toJson());
 
-      Loggers.info(
-          'Batch operations prepared, committing...');
+      Loggers.info('Batch operations prepared, committing...');
 
       // Commit batch operation
       await batch.commit();
@@ -580,9 +548,7 @@ class CreateLiveStreamScreenController
       Loggers.info('Navigating to host screen...');
 
       Get.off(() => LivestreamHostScreen(
-          hostPreview: hostPreview,
-          livestream: livestream,
-          isHost: true));
+          hostPreview: hostPreview, livestream: livestream, isHost: true));
     } catch (e, stackTrace) {
       Loggers.error('Failed to start live stream: $e');
       Loggers.error('StackTrace: $stackTrace');

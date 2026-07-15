@@ -10,8 +10,7 @@ class CreateLiveStreamScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller =
-        Get.put(CreateLiveStreamScreenController());
+    final controller = Get.put(CreateLiveStreamScreenController());
     return Scaffold(
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: false,
@@ -36,29 +35,23 @@ class CreateLiveStreamScreen extends StatelessWidget {
                   ),
                 ),
                 child: controller.localView.value ??
-                    (user?.profilePhoto?.addBaseURL() !=
-                            null
+                    ((user?.profilePhoto ?? '').isNotEmpty
                         ? Image.network(
-                            user!.profilePhoto!
-                                .addBaseURL(),
+                            user!.profilePhoto!.addBaseURL(),
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            errorBuilder: (context, error,
-                                    stackTrace) =>
+                            errorBuilder: (context, error, stackTrace) =>
                                 Container(
                               color: Colors.grey[900],
-                              child: const Icon(
-                                  Icons.person,
-                                  size: 100,
-                                  color: Colors.white54),
+                              child: const Icon(Icons.person,
+                                  size: 100, color: Colors.white54),
                             ),
                           )
                         : Container(
                             color: Colors.grey[900],
                             child: const Icon(Icons.person,
-                                size: 100,
-                                color: Colors.white54),
+                                size: 100, color: Colors.white54),
                           )),
               );
             },
@@ -99,12 +92,10 @@ class CreateLiveStreamScreen extends StatelessWidget {
                           height: 40,
                           width: 40,
                           decoration: BoxDecoration(
-                            color: Colors.white
-                                .withOpacity(0.2),
+                            color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white
-                                  .withOpacity(0.3),
+                              color: Colors.white.withOpacity(0.3),
                               width: 1,
                             ),
                           ),
@@ -125,8 +116,7 @@ class CreateLiveStreamScreen extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      const SizedBox(
-                          width: 40), // Balance the layout
+                      const SizedBox(width: 40), // Balance the layout
                     ],
                   ),
                 ),
@@ -149,8 +139,7 @@ class CreateLiveStreamScreen extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black
-                                    .withOpacity(0.3),
+                                color: Colors.black.withOpacity(0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
                               ),
@@ -182,53 +171,42 @@ class CreateLiveStreamScreen extends StatelessWidget {
                       // Stream title input with enhanced design (exact TopTap style)
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white
-                              .withOpacity(0.15),
-                          borderRadius:
-                              BorderRadius.circular(16),
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.white
-                                .withOpacity(0.2),
+                            color: Colors.white.withOpacity(0.2),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black
-                                  .withOpacity(0.2),
+                              color: Colors.black.withOpacity(0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
                           ],
                         ),
                         child: TextField(
-                          controller:
-                              controller.titleController,
+                          controller: controller.titleController,
                           onTapOutside: (event) =>
-                              FocusManager
-                                  .instance.primaryFocus
-                                  ?.unfocus(),
+                              FocusManager.instance.primaryFocus?.unfocus(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 17,
                             fontWeight: FontWeight.w400,
                           ),
                           decoration: InputDecoration(
-                            hintText: LKey
-                                .enterLiveStreamTitle.tr,
+                            hintText: LKey.enterLiveStreamTitle.tr,
                             hintStyle: TextStyle(
-                              color: Colors.white
-                                  .withOpacity(0.7),
+                              color: Colors.white.withOpacity(0.7),
                               fontSize: 17,
                               fontWeight: FontWeight.w300,
                             ),
                             prefixIcon: Icon(
                               Icons.title,
-                              color: Colors.white
-                                  .withOpacity(0.8),
+                              color: Colors.white.withOpacity(0.8),
                             ),
                             border: InputBorder.none,
-                            contentPadding:
-                                const EdgeInsets.symmetric(
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 20,
                               vertical: 20,
                             ),
@@ -242,8 +220,7 @@ class CreateLiveStreamScreen extends StatelessWidget {
 
                       // Enhanced feature options row (exact TopTap style)
                       Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceEvenly,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           // _buildFeatureButton(
                           //   icon: Icons.music_note,
@@ -255,10 +232,8 @@ class CreateLiveStreamScreen extends StatelessWidget {
                           Obx(() => _buildFeatureButton(
                                 icon: Icons.flag,
                                 label: 'Live Goal',
-                                isActive: controller
-                                    .hasLiveGoal.value,
-                                onTap: controller
-                                    .onLiveGoalTap,
+                                isActive: controller.hasLiveGoal.value,
+                                onTap: controller.onLiveGoalTap,
                               )),
                         ],
                       ),
@@ -270,22 +245,17 @@ class CreateLiveStreamScreen extends StatelessWidget {
                         if (controller.hasLiveGoal.value) {
                           return Container(
                             width: double.infinity,
-                            padding:
-                                const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.orange
-                                  .withOpacity(0.1),
-                              borderRadius:
-                                  BorderRadius.circular(12),
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.orange
-                                    .withOpacity(0.3),
+                                color: Colors.orange.withOpacity(0.3),
                                 width: 1,
                               ),
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Row(
                                   children: [
@@ -298,24 +268,20 @@ class CreateLiveStreamScreen extends StatelessWidget {
                                     Text(
                                       'Live Goal Set',
                                       style: TextStyle(
-                                        color:
-                                            Colors.orange,
+                                        color: Colors.orange,
                                         fontSize: 14,
-                                        fontWeight:
-                                            FontWeight.w600,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  controller
-                                      .liveGoalTitle.value,
+                                  controller.liveGoalTitle.value,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 15,
-                                    fontWeight:
-                                        FontWeight.w500,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -337,32 +303,24 @@ class CreateLiveStreamScreen extends StatelessWidget {
 
                       // Restrict user requests feature (in TopTap style)
                       Obx(() {
-                        bool isChecked =
-                            controller.isRestricted.value;
+                        bool isChecked = controller.isRestricted.value;
                         return GestureDetector(
                           onTap: () {
-                            controller.isRestricted.value =
-                                !isChecked;
+                            controller.isRestricted.value = !isChecked;
                           },
                           child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
-                              color: Colors.white
-                                  .withOpacity(0.1),
-                              borderRadius:
-                                  BorderRadius.circular(12),
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.white
-                                    .withOpacity(0.2),
+                                color: Colors.white.withOpacity(0.2),
                                 width: 1,
                               ),
                             ),
                             child: Row(
-                              mainAxisSize:
-                                  MainAxisSize.min,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
                                   width: 20,
@@ -370,35 +328,28 @@ class CreateLiveStreamScreen extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: isChecked
                                         ? Colors.white
-                                        : Colors
-                                            .transparent,
-                                    borderRadius:
-                                        BorderRadius
-                                            .circular(4),
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
-                                      color: Colors.white
-                                          .withOpacity(0.7),
+                                      color: Colors.white.withOpacity(0.7),
                                       width: 2,
                                     ),
                                   ),
                                   child: isChecked
                                       ? const Icon(
                                           Icons.check,
-                                          color:
-                                              Colors.black,
+                                          color: Colors.black,
                                           size: 14,
                                         )
                                       : null,
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  LKey.restrictUserRequests
-                                      .tr,
+                                  LKey.restrictUserRequests.tr,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 15,
-                                    fontWeight:
-                                        FontWeight.w400,
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ],
@@ -424,20 +375,17 @@ class CreateLiveStreamScreen extends StatelessWidget {
                                 Colors.red.shade800,
                               ],
                             ),
-                            borderRadius:
-                                BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.red
-                                    .withOpacity(0.4),
+                                color: Colors.red.withOpacity(0.4),
                                 blurRadius: 15,
                                 offset: const Offset(0, 8),
                               ),
                             ],
                           ),
                           child: Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(
                                 Icons.live_tv,
@@ -450,8 +398,7 @@ class CreateLiveStreamScreen extends StatelessWidget {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
-                                  fontWeight:
-                                      FontWeight.w700,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 1.2,
                                 ),
                               ),
@@ -496,17 +443,14 @@ class CreateLiveStreamScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: isActive
               ? Colors.orange.withOpacity(0.3)
               : Colors.white.withOpacity(0.12),
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isActive
-                ? Colors.orange
-                : Colors.white.withOpacity(0.25),
+            color: isActive ? Colors.orange : Colors.white.withOpacity(0.25),
             width: isActive ? 2 : 1,
           ),
         ),
@@ -515,20 +459,16 @@ class CreateLiveStreamScreen extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color:
-                  isActive ? Colors.orange : Colors.white,
+              color: isActive ? Colors.orange : Colors.white,
               size: 20,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color:
-                    isActive ? Colors.orange : Colors.white,
+                color: isActive ? Colors.orange : Colors.white,
                 fontSize: 14,
-                fontWeight: isActive
-                    ? FontWeight.w600
-                    : FontWeight.w400,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ],

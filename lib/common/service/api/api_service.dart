@@ -295,6 +295,12 @@ class ApiService {
       final responseStr = await responseStream.stream.bytesToString();
       final decodedResponse = _tryDecodeJsonMap(responseStr);
 
+      Loggers.info('Multipart response status: $responseStatusCode');
+      if (responseStatusCode >= 400 || decodedResponse == null) {
+        Loggers.error(
+            'Multipart response body: ${_shorten(responseStr)}');
+      }
+
       if (responseStatusCode == 401) {
         _handleUnauthorized(cancelAuthToken: cancelAuthToken);
         throw Exception('Unauthorized Error: $responseStatusCode');

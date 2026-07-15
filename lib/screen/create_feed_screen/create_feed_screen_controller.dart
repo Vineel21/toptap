@@ -32,8 +32,7 @@ import 'package:shortzz/model/post_story/music/music_model.dart';
 import 'package:shortzz/model/post_story/post_model.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 // Import shared camera types
-import 'package:shortzz/screen/camera_screen/camera_types.dart'
-    as camera_types;
+import 'package:shortzz/screen/camera_screen/camera_types.dart' as camera_types;
 import 'package:shortzz/screen/color_filter_screen/widget/color_filtered.dart';
 import 'package:shortzz/screen/comment_sheet/helper/comment_helper.dart';
 import 'package:shortzz/screen/create_feed_screen/create_feed_screen.dart';
@@ -47,12 +46,10 @@ import 'package:video_player/video_player.dart';
 enum DetectType { hashTag, atSign }
 
 class CreateFeedScreenController extends BaseController {
-  final dashboardController =
-      Get.find<DashboardScreenController>();
+  final dashboardController = Get.find<DashboardScreenController>();
   Rx<FeedPostType> feedPostType = FeedPostType.text.obs;
   RxBool canComment = true.obs;
-  final RetrytechPlugin _retrytechPlugin =
-      RetrytechPlugin();
+  final RetrytechPlugin _retrytechPlugin = RetrytechPlugin();
 
   CommentHelper commentHelper = CommentHelper();
   User? myUser = SessionManager.instance.getUser();
@@ -63,8 +60,7 @@ class CreateFeedScreenController extends BaseController {
   Rx<Places?> selectedLocation = Rx(null);
   RxDouble progress = 0.0.obs;
   RxBool isUploadingPost = false.obs;
-  Rx<VideoPlayerController?> videoPlayerController =
-      Rx(null);
+  Rx<VideoPlayerController?> videoPlayerController = Rx(null);
   RxInt selectedImageIndex = 0.obs;
   Function({Post? post, CreateFeedType? type})? onAddPost;
   CreateFeedType createType;
@@ -75,8 +71,7 @@ class CreateFeedScreenController extends BaseController {
   // CRITICAL FIX: Add video editing controller to preserve edits
   dynamic videoEditingController;
 
-  CreateFeedScreenController(
-      this.onAddPost, this.createType, this.content,
+  CreateFeedScreenController(this.onAddPost, this.createType, this.content,
       [this.videoEditingController]);
 
   UploadType _lastUploadType = UploadType.none;
@@ -102,18 +97,14 @@ class CreateFeedScreenController extends BaseController {
     // Check if content was passed from camera
     final contentValue = content.value;
     print('🔍 DEBUG: content.value = $contentValue');
-    if (contentValue != null &&
-        contentValue.content != null) {
-      print(
-          '🔍 DEBUG: contentValue.content = ${contentValue.content}');
-      print(
-          '🔍 DEBUG: contentValue.type = ${contentValue.type}');
+    if (contentValue != null && contentValue.content != null) {
+      print('🔍 DEBUG: contentValue.content = ${contentValue.content}');
+      print('🔍 DEBUG: contentValue.type = ${contentValue.type}');
       switch (contentValue.type) {
         case camera_types.PostStoryContentType.storyImage:
           // Initialize image from camera content
           final imageFile = XFile(contentValue.content!);
-          images.add(ImageWithFilter(
-              media: imageFile, thumbnail: imageFile));
+          images.add(ImageWithFilter(media: imageFile, thumbnail: imageFile));
           feedPostType.value = FeedPostType.image;
           print(
               '✅ Image initialized from camera content: ${contentValue.content}');
@@ -121,14 +112,12 @@ class CreateFeedScreenController extends BaseController {
         case camera_types.PostStoryContentType.storyVideo:
           // Initialize video from camera content
           final videoFile = XFile(contentValue.content!);
-          video.value = ImageWithFilter(
-              media: videoFile, thumbnail: videoFile);
+          video.value = ImageWithFilter(media: videoFile, thumbnail: videoFile);
           feedPostType.value = FeedPostType.video;
 
           // Initialize video player controller for camera video
           videoPlayerController.value =
-              VideoPlayerController.file(
-                  File(contentValue.content!))
+              VideoPlayerController.file(File(contentValue.content!))
                 ..initialize().then((value) {
                   print(
                       '🔍 DEBUG: Video player initialized for: ${contentValue.content}');
@@ -141,12 +130,10 @@ class CreateFeedScreenController extends BaseController {
               '🔍 DEBUG: Checking if file exists: ${File(contentValue.content!).existsSync()}');
           break;
         default:
-          print(
-              '⚠️ Content type not supported for feed: ${contentValue.type}');
+          print('⚠️ Content type not supported for feed: ${contentValue.type}');
       }
     } else {
-      print(
-          '🔍 DEBUG: No content received from camera or content is null');
+      print('🔍 DEBUG: No content received from camera or content is null');
     }
   }
 
@@ -158,8 +145,7 @@ class CreateFeedScreenController extends BaseController {
 
   Future _fetchSetting() async {
     setting.value = SessionManager.instance.getSettings();
-    bool result =
-        await CommonService.instance.fetchGlobalSettings();
+    bool result = await CommonService.instance.fetchGlobalSettings();
     if (result == true) {
       setting.value = SessionManager.instance.getSettings();
     }
@@ -171,8 +157,7 @@ class CreateFeedScreenController extends BaseController {
         title: 'Upload in progress',
         message: 'Please wait until the current upload finishes.',
         backgroundColor: Colors.orange.withValues(alpha: 0.9),
-        icon: const Icon(Icons.hourglass_top_rounded,
-            color: Colors.white),
+        icon: const Icon(Icons.hourglass_top_rounded, color: Colors.white),
         duration: const Duration(seconds: 2),
       );
       return;
@@ -184,11 +169,9 @@ class CreateFeedScreenController extends BaseController {
       Loggers.warning('Nothing to upload. Aborting...');
       return;
     }
-    final rawDescription =
-        commentHelper.detectableTextController.text;
+    final rawDescription = commentHelper.detectableTextController.text;
 
-    final postParams =
-        await _buildPostParams(rawDescription);
+    final postParams = await _buildPostParams(rawDescription);
 
     Loggers.info('Post Data: $postParams');
 
@@ -209,29 +192,24 @@ class CreateFeedScreenController extends BaseController {
         commentHelper.detectableTextController.text.isEmpty;
   }
 
-  Future<Map<String, dynamic>> _buildPostParams(
-      String rawDescription) async {
+  Future<Map<String, dynamic>> _buildPostParams(String rawDescription) async {
     final params = <String, dynamic>{
-      if (rawDescription.isNotEmpty)
-        Params.description: rawDescription,
+      if (rawDescription.isNotEmpty) Params.description: rawDescription,
       Params.canComment: canComment.value ? 1 : 0,
     };
 
     _addTextDetections(params, rawDescription);
     _addLocationData(params);
 
-    if (selectedLocation.value == null &&
-        createType == CreateFeedType.reel) {
+    if (selectedLocation.value == null && createType == CreateFeedType.reel) {
       await _addCurrentLocationData(params);
     }
 
     return params;
   }
 
-  void _addTextDetections(
-      Map<String, dynamic> params, String rawDescription) {
-    final mentionUsernames =
-        _extractUniqueMentions(rawDescription);
+  void _addTextDetections(Map<String, dynamic> params, String rawDescription) {
+    final mentionUsernames = _extractUniqueMentions(rawDescription);
     final hashtags = _extractUniqueHashtags(rawDescription);
     final processedDescription =
         _processMentions(rawDescription, mentionUsernames);
@@ -245,14 +223,12 @@ class CreateFeedScreenController extends BaseController {
     }
 
     if (mentionUserIds.isNotEmpty) {
-      params[Params.mentionedUserIds] =
-          mentionUserIds.join(',');
+      params[Params.mentionedUserIds] = mentionUserIds.join(',');
     }
   }
 
   List<String> _extractUniqueMentions(String text) {
-    return TextPatternDetector.extractDetections(
-            text, atSignRegExp)
+    return TextPatternDetector.extractDetections(text, atSignRegExp)
         .where((text) => text.contains('@'))
         .map((text) => text.replaceAll('@', ''))
         .toSet()
@@ -260,16 +236,14 @@ class CreateFeedScreenController extends BaseController {
   }
 
   List<String> _extractUniqueHashtags(String text) {
-    return TextPatternDetector.extractDetections(
-            text, hashTagRegExp)
+    return TextPatternDetector.extractDetections(text, hashTagRegExp)
         .where((text) => text.contains('#'))
         .map((text) => text.replaceAll('#', ''))
         .toSet()
         .toList();
   }
 
-  String _processMentions(
-      String text, List<String> mentionUsernames) {
+  String _processMentions(String text, List<String> mentionUsernames) {
     var processedText = text;
 
     for (final username in mentionUsernames) {
@@ -280,8 +254,7 @@ class CreateFeedScreenController extends BaseController {
           RegExp(RegExp.escape('@$username')),
           (_) => '@${user.id}',
         );
-        mentionUserIds.addIf(
-            !mentionUserIds.contains(user.id), user.id!);
+        mentionUserIds.addIf(!mentionUserIds.contains(user.id), user.id!);
       }
     }
 
@@ -296,21 +269,17 @@ class CreateFeedScreenController extends BaseController {
       Params.country: location.shortCountry,
       Params.state: location.shortState,
       Params.placeTitle: location.placeTitle,
-      Params.placeLat:
-          '${location.location?.latitude ?? ''}',
-      Params.placeLon:
-          '${location.location?.longitude ?? ''}',
+      Params.placeLat: '${location.location?.latitude ?? ''}',
+      Params.placeLon: '${location.location?.longitude ?? ''}',
     });
   }
 
-  Future<void> _addCurrentLocationData(
-      Map<String, dynamic> params) async {
+  Future<void> _addCurrentLocationData(Map<String, dynamic> params) async {
     Position? position;
     PlaceDetail? detail;
     try {
       position = await Geolocator.getCurrentPosition();
-      detail =
-          await CommonService.instance.getIPPlaceDetail();
+      detail = await CommonService.instance.getIPPlaceDetail();
     } catch (e) {
       Loggers.error('_addCurrentLocationData $e');
     }
@@ -318,23 +287,18 @@ class CreateFeedScreenController extends BaseController {
       params.addAll({
         Params.country: detail.country,
         Params.state: detail.region,
-        Params.placeLat:
-            '${position?.latitude ?? detail.lat}',
-        Params.placeLon:
-            '${position?.longitude ?? detail.lon}',
+        Params.placeLat: '${position?.latitude ?? detail.lat}',
+        Params.placeLon: '${position?.longitude ?? detail.lon}',
       });
     }
   }
 
   void runContentModerationAndUpload(
-      {required String description,
-      required Map<String, dynamic> params}) {
+      {required String description, required Map<String, dynamic> params}) {
     switch (feedPostType.value) {
       case FeedPostType.image:
-        Loggers.info(
-            'Running SightEngine image moderation...');
-        List<XFile> imageFiles =
-            images.map((img) => img.media).toList();
+        Loggers.info('Running SightEngine image moderation...');
+        List<XFile> imageFiles = images.map((img) => img.media).toList();
         SightEngineService.shared.checkImagesInSightEngine(
           xFiles: imageFiles,
           completion: () {
@@ -343,8 +307,7 @@ class CreateFeedScreenController extends BaseController {
         );
         break;
       case FeedPostType.text:
-        Loggers.info(
-            'Running SightEngine text moderation...');
+        Loggers.info('Running SightEngine text moderation...');
         SightEngineService.shared.chooseTextModeration(
           text: description,
           completion: () {
@@ -353,13 +316,10 @@ class CreateFeedScreenController extends BaseController {
         );
         break;
       case FeedPostType.video:
-        Loggers.info(
-            'Running SightEngine video moderation...');
+        Loggers.info('Running SightEngine video moderation...');
         SightEngineService.shared.checkVideoInSightEngine(
           xFile: video.value!.media,
-          duration: videoPlayerController
-                  .value?.value.duration.inSeconds ??
-              0,
+          duration: videoPlayerController.value?.value.duration.inSeconds ?? 0,
           completion: () {
             _uploadPostHandler(params);
           },
@@ -368,8 +328,7 @@ class CreateFeedScreenController extends BaseController {
     }
   }
 
-  Future<void> _uploadPostHandler(
-      Map<String, dynamic> postParams) async {
+  Future<void> _uploadPostHandler(Map<String, dynamic> postParams) async {
     // 🔧 FIX: Don't close screens yet - wait until upload completes
     Loggers.info('Post upload initiated...');
 
@@ -386,41 +345,36 @@ class CreateFeedScreenController extends BaseController {
       switch (createType) {
         case CreateFeedType.reel:
           Loggers.info('Uploading Reel...');
-          postResponse = await _handleReelUpload(
-              content.value, postParams);
+          postResponse = await _handleReelUpload(content.value, postParams);
           break;
 
         case CreateFeedType.feed:
           switch (feedPostType.value) {
             case FeedPostType.image:
               Loggers.info('Uploading Image post...');
-              postResponse =
-                  await _handleImageUpload(postParams);
+              postResponse = await _handleImageUpload(postParams);
               break;
             case FeedPostType.text:
               Loggers.info('Uploading Text post...');
 
               updateUploadingProgress(progress: 90);
               if (commentHelper.metaData.value != null) {
-                postParams[Params.metadata] = jsonEncode(
-                    commentHelper.metaData.value);
+                postParams[Params.metadata] =
+                    jsonEncode(commentHelper.metaData.value);
               }
-              postResponse = await AddPostStoryService
-                  .instance
+              postResponse = await AddPostStoryService.instance
                   .addPostFeedText(param: postParams);
               break;
             case FeedPostType.video:
               Loggers.info('Uploading Video post...');
-              postResponse =
-                  await _handleVideoUpload(postParams);
+              postResponse = await _handleVideoUpload(postParams);
               break;
           }
       }
 
       // Check result and update progress
       if (postResponse == null) {
-        final failureReason =
-            _lastUploadErrorMessage?.trim();
+        final failureReason = _lastUploadErrorMessage?.trim();
         Loggers.error(
             'Post upload failed ❌: ${failureReason?.isNotEmpty == true ? failureReason : 'empty response'}');
         return;
@@ -444,17 +398,14 @@ class CreateFeedScreenController extends BaseController {
         // Notify profile controller if available
         if (Get.isRegistered<ProfileScreenController>(
             tag: ProfileScreenController.tag)) {
-          final profileController =
-              Get.find<ProfileScreenController>(
-                  tag: ProfileScreenController.tag);
-          profileController.onAddPost(
-              post: post, type: createType);
+          final profileController = Get.find<ProfileScreenController>(
+              tag: ProfileScreenController.tag);
+          profileController.onAddPost(post: post, type: createType);
         }
 
         // 🔄 Integration with ReactiveSaveManager for automatic save state
         if (Get.isRegistered<ReactiveSaveManager>()) {
-          final saveManager =
-              Get.find<ReactiveSaveManager>();
+          final saveManager = Get.find<ReactiveSaveManager>();
           // Add the new post to tracking
           saveManager.trackNewPost(post);
         }
@@ -469,8 +420,7 @@ class CreateFeedScreenController extends BaseController {
 
         // Don't close screens here - let _navigateToCorrectDestination handle it
         try {
-          await _navigateToCorrectDestination(
-              post, createType);
+          await _navigateToCorrectDestination(post, createType);
         } catch (e) {
           Loggers.warning('Navigation error (ignored): $e');
         }
@@ -480,16 +430,14 @@ class CreateFeedScreenController extends BaseController {
           Loggers.warning('Notify mentioned users failed: $e');
         }
       } else {
-        final errorMessage =
-            postResponse.message?.trim();
+        final errorMessage = postResponse.message?.trim();
         Loggers.error(
             'Post upload failed ❌: ${errorMessage?.isNotEmpty == true ? errorMessage : 'Unknown server error'}');
 
         // Check if this is a device-specific provider error (OnePlus analytics)
         String? providerErrorMessage = postResponse.message;
         if (providerErrorMessage != null &&
-            (providerErrorMessage.contains(
-                    'oplus.statistics.provider') ||
+            (providerErrorMessage.contains('oplus.statistics.provider') ||
                 providerErrorMessage.contains('OplusStatistics') ||
                 providerErrorMessage.contains('provider info'))) {
           Loggers.warning(
@@ -500,10 +448,8 @@ class CreateFeedScreenController extends BaseController {
             title: 'Upload Warning',
             message:
                 'Upload may have completed but analytics failed. Please check your profile.',
-            backgroundColor:
-                Colors.orange.withValues(alpha: 0.9),
-            icon: const Icon(Icons.warning_amber_rounded,
-                color: Colors.white),
+            backgroundColor: Colors.orange.withValues(alpha: 0.9),
+            icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
             duration: const Duration(seconds: 4),
           );
 
@@ -521,8 +467,7 @@ class CreateFeedScreenController extends BaseController {
 
       // Handle device-specific provider errors
       String errorMessage = e.toString();
-      if (errorMessage
-              .contains('oplus.statistics.provider') ||
+      if (errorMessage.contains('oplus.statistics.provider') ||
           errorMessage.contains('OplusStatistics') ||
           errorMessage.contains('provider info')) {
         Loggers.warning(
@@ -532,10 +477,8 @@ class CreateFeedScreenController extends BaseController {
           title: 'Upload Status',
           message:
               'Upload may have completed despite analytics error. Please check your profile.',
-          backgroundColor:
-              Colors.orange.withValues(alpha: 0.9),
-          icon: const Icon(Icons.warning_amber_rounded,
-              color: Colors.white),
+          backgroundColor: Colors.orange.withValues(alpha: 0.9),
+          icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
           duration: const Duration(seconds: 5),
         );
 
@@ -555,10 +498,9 @@ class CreateFeedScreenController extends BaseController {
     List<Future> batch = [];
 
     for (final mentionUser in (post.mentionedUsers ?? [])) {
-      if (mentionUser.notifyMention == 1 &&
-          mentionUser.id != myUser?.id) {
-        batch.add(FirebaseNotificationManager.instance
-            .sendLocalisationNotification(
+      if (mentionUser.notifyMention == 1 && mentionUser.id != myUser?.id) {
+        batch.add(
+            FirebaseNotificationManager.instance.sendLocalisationNotification(
           LKey.notifyMentionedInPost.tr,
           type: NotificationType.post,
           body: NotificationInfo(id: post.id),
@@ -579,48 +521,39 @@ class CreateFeedScreenController extends BaseController {
     }
   }
 
-  Future<PostModel?> _handleReelUpload(
-      camera_types.PostStoryContent? content,
+  Future<PostModel?> _handleReelUpload(camera_types.PostStoryContent? content,
       Map<String, dynamic> params) async {
     if (content == null) {
-      return failedResponseSnackBar(
-          message: 'Invalid content');
+      return failedResponseSnackBar(message: 'Invalid content');
     }
 
     final String videoPath = content.content ?? '';
-    final String extractAudioPath =
-        '${localPath}extract_audio.m4a';
+    final String extractAudioPath = '${localPath}extract_audio.m4a';
 
     // CRITICAL FIX: Enhanced video path validation
     if (videoPath.isEmpty) {
       Loggers.error('Video path is empty for reel upload');
       return failedResponseSnackBar(
-          message:
-              'Video not found - recording may have failed');
+          message: 'Video not found - recording may have failed');
     }
 
     // CRITICAL FIX: Verify video file exists and has valid size
     final videoFile = File(videoPath);
     if (!await videoFile.exists()) {
-      Loggers.error(
-          'Video file does not exist: $videoPath');
+      Loggers.error('Video file does not exist: $videoPath');
       return failedResponseSnackBar(
-          message:
-              'Video file not found - please try recording again');
+          message: 'Video file not found - please try recording again');
     }
 
     final fileSize = await videoFile.length();
     if (fileSize < 100000) {
       // Less than 100KB is likely corrupted
-      Loggers.error(
-          'Video file too small: $fileSize bytes at $videoPath');
+      Loggers.error('Video file too small: $fileSize bytes at $videoPath');
       return failedResponseSnackBar(
-          message:
-              'Video file corrupted - please record a new video');
+          message: 'Video file corrupted - please record a new video');
     }
 
-    Loggers.success(
-        'Video validation passed: $fileSize bytes at $videoPath');
+    Loggers.success('Video validation passed: $fileSize bytes at $videoPath');
 
     SelectedMusic? selectedMusic = content.sound;
     bool hasAudio = content.hasAudio;
@@ -629,45 +562,36 @@ class CreateFeedScreenController extends BaseController {
 
     if (hasAudio) {
       if (selectedMusic == null) {
-        final duration =
-            Duration(seconds: content.duration ?? 0);
+        final duration = Duration(seconds: content.duration ?? 0);
 
-        final String artistName =
-            myUser?.username ?? 'Unknown';
+        final String artistName = myUser?.username ?? 'Unknown';
 
         Loggers.info('Extracting audio from video...');
         bool? success = await _retrytechPlugin.extractAudio(
-            inputPath: videoPath,
-            outputPath: extractAudioPath);
+            inputPath: videoPath, outputPath: extractAudioPath);
 
         if (success == false) {
           deleteFiles([extractAudioPath]);
-          return failedResponseSnackBar(
-              message: 'Audio extraction failed.');
+          return failedResponseSnackBar(message: 'Audio extraction failed.');
         }
         tempFiles.add(extractAudioPath);
 
-        Loggers.success(
-            'Audio extracted at: $extractAudioPath');
+        Loggers.success('Audio extracted at: $extractAudioPath');
 
         // Load profile image or fallback to thumbnail
         final XFile? profileImage =
-            await _loadProfileOrThumbnailImage(
-                content.thumbNail);
+            await _loadProfileOrThumbnailImage(content.thumbNail);
 
         Loggers.info('Uploading extracted music...');
-        uploadedMusic =
-            await PostService.instance.addUserMusic(
+        uploadedMusic = await PostService.instance.addUserMusic(
           title: AppRes.addMusicName,
-          duration:
-              '${duration.inMinutes}:${duration.inSeconds % 60}',
+          duration: '${duration.inMinutes}:${duration.inSeconds % 60}',
           artist: artistName,
           sound: XFile(extractAudioPath),
           image: profileImage,
         );
 
-        Loggers.success(
-            'Music uploaded: ${uploadedMusic?.title}');
+        Loggers.success('Music uploaded: ${uploadedMusic?.title}');
       } else {
         uploadedMusic = selectedMusic.music;
       }
@@ -676,8 +600,7 @@ class CreateFeedScreenController extends BaseController {
 
       if (uploadedMusic == null) {
         deleteFiles(tempFiles);
-        return failedResponseSnackBar(
-            message: 'Music not found');
+        return failedResponseSnackBar(message: 'Music not found');
       }
     }
 
@@ -699,8 +622,7 @@ class CreateFeedScreenController extends BaseController {
         !File(finalThumbnailFile.path).existsSync()) {
       deleteFiles(tempFiles);
       return failedResponseSnackBar(
-          message:
-              'Thumbnail generation failed. Please try another video.');
+          message: 'Thumbnail generation failed. Please try another video.');
     }
 
     XFile uploadReadyVideo = await _createSafeUploadCopy(
@@ -718,19 +640,20 @@ class CreateFeedScreenController extends BaseController {
     Loggers.info('Uploading video...');
     FilePathModel uploadedVideo;
     try {
-      uploadedVideo = await CommonService.instance
-          .uploadFileGivePath(uploadReadyVideo);
+      uploadedVideo =
+          await CommonService.instance.uploadFileGivePath(uploadReadyVideo);
     } catch (e) {
       Loggers.warning('Reel video upload failed: $e');
       if (!_shouldRetryCompressedUpload(e)) {
         deleteFiles(tempFiles);
         return failedResponseSnackBar(
-            message:
-                'Video upload failed. Please try again.');
+            message: _resolveUploadFailureMessage(
+          e,
+          fallback: 'Video upload failed. Please try again.',
+        ));
       }
 
-      XFile? retryCompressedVideo = await MediaPickerHelper
-          .shared
+      XFile? retryCompressedVideo = await MediaPickerHelper.shared
           .compressVideoLowQuality(finalVideoFile.path);
       if (retryCompressedVideo == null ||
           retryCompressedVideo.path.isEmpty ||
@@ -749,8 +672,8 @@ class CreateFeedScreenController extends BaseController {
         tempFiles: tempFiles,
       );
       try {
-        uploadedVideo = await CommonService.instance
-            .uploadFileGivePath(uploadReadyVideo);
+        uploadedVideo =
+            await CommonService.instance.uploadFileGivePath(uploadReadyVideo);
       } catch (retryError) {
         deleteFiles(tempFiles);
         return failedResponseSnackBar(
@@ -764,8 +687,8 @@ class CreateFeedScreenController extends BaseController {
         uploadedVideo.data!.isEmpty) {
       Loggers.warning(
           'Reel video upload invalid response: status=${uploadedVideo.status}, message=${uploadedVideo.message}, data=${uploadedVideo.data}');
-      XFile? retryCompressedVideo = await MediaPickerHelper
-          .shared
+
+      XFile? retryCompressedVideo = await MediaPickerHelper.shared
           .compressVideoLowQuality(finalVideoFile.path);
       if (retryCompressedVideo != null &&
           retryCompressedVideo.path.isNotEmpty &&
@@ -778,8 +701,8 @@ class CreateFeedScreenController extends BaseController {
           tempFiles: tempFiles,
         );
         try {
-          uploadedVideo = await CommonService.instance
-              .uploadFileGivePath(uploadReadyVideo);
+          uploadedVideo =
+              await CommonService.instance.uploadFileGivePath(uploadReadyVideo);
         } catch (_) {}
       }
 
@@ -788,23 +711,21 @@ class CreateFeedScreenController extends BaseController {
           uploadedVideo.data!.isEmpty) {
         deleteFiles(tempFiles);
         return failedResponseSnackBar(
-            message:
-                uploadedVideo.message?.isNotEmpty == true
-                    ? uploadedVideo.message
-                    : 'Video upload failed. Please try a shorter video.');
+            message: uploadedVideo.message?.isNotEmpty == true
+                ? uploadedVideo.message
+                : 'Video upload failed. Please try a shorter video.');
       }
     }
 
     Loggers.info('Uploading thumbnail...');
     FilePathModel uploadedThumb;
     try {
-      uploadedThumb = await CommonService.instance
-          .uploadFileGivePath(uploadReadyThumbnail);
+      uploadedThumb =
+          await CommonService.instance.uploadFileGivePath(uploadReadyThumbnail);
     } catch (e) {
       deleteFiles(tempFiles);
       return failedResponseSnackBar(
-          message:
-              'Thumbnail upload failed. Please try again.');
+          message: 'Thumbnail upload failed. Please try again.');
     }
 
     // Step 6: Check upload success
@@ -822,10 +743,8 @@ class CreateFeedScreenController extends BaseController {
             File(regeneratedThumb.path).existsSync()) {
           tempFiles.add(regeneratedThumb.path);
           XFile uploadThumb = regeneratedThumb;
-          final compressedThumb = await MediaPickerHelper.shared
-              .compressImage(
-                  regeneratedThumb.path,
-                  '${localPath}reel_thumb_retry.jpg');
+          final compressedThumb = await MediaPickerHelper.shared.compressImage(
+              regeneratedThumb.path, '${localPath}reel_thumb_retry.jpg');
           if (compressedThumb != null &&
               compressedThumb.path.isNotEmpty &&
               File(compressedThumb.path).existsSync()) {
@@ -833,8 +752,7 @@ class CreateFeedScreenController extends BaseController {
             tempFiles.add(compressedThumb.path);
           }
 
-          final uploadReadyRetryThumb =
-              await _createSafeUploadCopy(
+          final uploadReadyRetryThumb = await _createSafeUploadCopy(
             source: uploadThumb,
             prefix: 'reel_thumb_retry',
             tempFiles: tempFiles,
@@ -855,12 +773,11 @@ class CreateFeedScreenController extends BaseController {
         uploadedThumb.data!.isEmpty) {
       deleteFiles(tempFiles);
       return failedResponseSnackBar(
-          message:
-              uploadedVideo.message?.isNotEmpty == true
-                  ? uploadedVideo.message
-                  : (uploadedThumb.message?.isNotEmpty == true
-                      ? uploadedThumb.message
-                      : 'Video or thumbnail upload failed.'));
+          message: uploadedVideo.message?.isNotEmpty == true
+              ? uploadedVideo.message
+              : (uploadedThumb.message?.isNotEmpty == true
+                  ? uploadedThumb.message
+                  : 'Video or thumbnail upload failed.'));
     }
 
     deleteFiles(tempFiles);
@@ -875,16 +792,15 @@ class CreateFeedScreenController extends BaseController {
     // Final post upload
     try {
       Loggers.info('Uploading final post...');
-      PostModel result = await AddPostStoryService.instance
-          .addPostReel(param: params);
+      PostModel result =
+          await AddPostStoryService.instance.addPostReel(param: params);
       return result;
     } catch (e) {
       return failedResponseSnackBar(message: '$e');
     }
   }
 
-  Future<XFile?> _loadProfileOrThumbnailImage(
-      String? fallbackThumb) async {
+  Future<XFile?> _loadProfileOrThumbnailImage(String? fallbackThumb) async {
     try {
       String profileImage = myUser?.profilePhoto ?? '';
 
@@ -892,8 +808,8 @@ class CreateFeedScreenController extends BaseController {
         return null;
       }
 
-      final file = await DefaultCacheManager()
-          .getSingleFile(profileImage.addBaseURL());
+      final file =
+          await DefaultCacheManager().getSingleFile(profileImage.addBaseURL());
       Loggers.success('Loaded profile image from URL.');
       return XFile(file.path);
     } catch (e) {
@@ -904,12 +820,10 @@ class CreateFeedScreenController extends BaseController {
     return XFile(fallbackThumb ?? '');
   }
 
-  Future<PostModel?> _handleImageUpload(
-      Map<String, dynamic> params) async {
+  Future<PostModel?> _handleImageUpload(Map<String, dynamic> params) async {
     if (images.isEmpty) {
       Loggers.warning('No images selected for upload.');
-      return failedResponseSnackBar(
-          message: 'No images to upload');
+      return failedResponseSnackBar(message: 'No images to upload');
     }
 
     Loggers.info('Starting image upload...');
@@ -917,32 +831,27 @@ class CreateFeedScreenController extends BaseController {
     // Step 1: Apply filters if any
     List<XFile> filterImages = await Future.wait(
       images.map((image) async {
-        bool isFilterApply =
-            !listEquals(image.colorFilter, defaultFilter);
+        bool isFilterApply = !listEquals(image.colorFilter, defaultFilter);
         if (isFilterApply) {
-          Loggers.info(
-              'Applying color filter to image at ${image.media.path}');
+          Loggers.info('Applying color filter to image at ${image.media.path}');
           String outputPath =
               '$localPath${images.indexOf(image)}filter_image.jpg';
-          bool? result =
-              await _retrytechPlugin.applyFilterToImage(
-                  inputPath: image.media.path,
-                  filterValues: image.colorFilter,
-                  outputPath: outputPath);
+          bool? result = await _retrytechPlugin.applyFilterToImage(
+              inputPath: image.media.path,
+              filterValues: image.colorFilter,
+              outputPath: outputPath);
           if (result == true) {
             Loggers.success('Filter applied: $outputPath');
             return XFile(outputPath);
           } else {
-            Loggers.warning(
-                'Filter failed, using original image.');
+            Loggers.warning('Filter failed, using original image.');
           }
         }
         return XFile(image.media.path);
       }),
     );
 
-    Loggers.info(
-        'Apply Filters : ${filterImages.map((e) => e.path)}');
+    Loggers.info('Apply Filters : ${filterImages.map((e) => e.path)}');
 
     updateUploadingProgress(progress: 10);
 
@@ -953,12 +862,10 @@ class CreateFeedScreenController extends BaseController {
       for (int i = 0; i < filterImages.length; i++) {
         XFile? imageFile = filterImages[i];
 
-        Loggers.info(
-            'Compressing image: ${imageFile.path}');
-        XFile? _compressImageFile =
-            await MediaPickerHelper.shared.compressImage(
-                imageFile.path,
-                '${localPath}compress_images_$i.jpg');
+        Loggers.info('Compressing image: ${imageFile.path}');
+        XFile? _compressImageFile = await MediaPickerHelper.shared
+            .compressImage(
+                imageFile.path, '${localPath}compress_images_$i.jpg');
         if (_compressImageFile != null) {
           compressImages.add(_compressImageFile.path);
         } else {
@@ -974,34 +881,29 @@ class CreateFeedScreenController extends BaseController {
 
     updateUploadingProgress(progress: 30);
 
-    Loggers.info(
-        'Compress image : ${compressImages.map((e) => e)}');
+    Loggers.info('Compress image : ${compressImages.map((e) => e)}');
 
     // Step 3: Uploading each image
     List<String> uploadedImagePaths = [];
     for (var image in compressImages) {
-      final result = await CommonService.instance
-          .uploadFileGivePath(XFile(image));
+      final result =
+          await CommonService.instance.uploadFileGivePath(XFile(image));
       if (result.status == true && result.data != null) {
         uploadedImagePaths.add(result.data!);
         Loggers.success('Image uploaded: ${result.data}');
       } else {
-        Loggers.error(
-            'Image upload failed: ${result.message}');
-        deleteFiles(
-            images.map((e) => e.media.path).toList() +
-                filterImages.map((e) => e.path).toList() +
-                compressImages);
-        return failedResponseSnackBar(
-            message: result.message);
+        Loggers.error('Image upload failed: ${result.message}');
+        deleteFiles(images.map((e) => e.media.path).toList() +
+            filterImages.map((e) => e.path).toList() +
+            compressImages);
+        return failedResponseSnackBar(message: result.message);
       }
     }
     updateUploadingProgress(progress: 90);
 
     // Step 4: Add uploaded image paths to params
     for (int i = 0; i < uploadedImagePaths.length; i++) {
-      params['${Params.postImages}[$i]'] =
-          uploadedImagePaths[i];
+      params['${Params.postImages}[$i]'] = uploadedImagePaths[i];
     }
 
     // Delete temporary files
@@ -1013,8 +915,8 @@ class CreateFeedScreenController extends BaseController {
 
     // Step 5: Upload final post
     try {
-      final postResult = await AddPostStoryService.instance
-          .addPostFeedImage(param: params);
+      final postResult =
+          await AddPostStoryService.instance.addPostFeedImage(param: params);
       return postResult;
     } catch (e) {
       Loggers.error('Exception during post upload: $e');
@@ -1022,20 +924,17 @@ class CreateFeedScreenController extends BaseController {
     }
   }
 
-  Future<PostModel?> _handleVideoUpload(
-      Map<String, dynamic> params) async {
+  Future<PostModel?> _handleVideoUpload(Map<String, dynamic> params) async {
     ImageWithFilter? videoData = video.value;
     if (videoData == null) {
-      return failedResponseSnackBar(
-          message: 'Video not found');
+      return failedResponseSnackBar(message: 'Video not found');
     }
     Loggers.info('Starting video upload...');
 
     final List<String?> tempFiles = [];
     String inputVideoPath = videoData.media.path;
     XFile finalThumbnailFile = videoData.thumbnail;
-    bool isApplyFilter =
-        !listEquals(videoData.colorFilter, defaultFilter);
+    bool isApplyFilter = !listEquals(videoData.colorFilter, defaultFilter);
 
     XFile finalVideoFile = XFile(inputVideoPath);
     String outputVideoPath = '${localPath}filter_video.mp4';
@@ -1047,12 +946,11 @@ class CreateFeedScreenController extends BaseController {
 
     // Step 1: Apply color filter if present
     if (isApplyFilter) {
-      bool? result =
-          await _retrytechPlugin.applyFilterAndAudioToVideo(
-              inputPath: inputVideoPath,
-              outputPath: outputVideoPath,
-              filterValues: videoData.colorFilter,
-              shouldBothMusics: true);
+      bool? result = await _retrytechPlugin.applyFilterAndAudioToVideo(
+          inputPath: inputVideoPath,
+          outputPath: outputVideoPath,
+          filterValues: videoData.colorFilter,
+          shouldBothMusics: true);
       if (result == true) {
         Loggers.info('Applying color filter to video...');
         finalVideoFile = XFile(outputVideoPath);
@@ -1060,14 +958,12 @@ class CreateFeedScreenController extends BaseController {
         // Step 2: Extract thumbnail from the final video
         Loggers.info('Extracting thumbnail...');
         finalThumbnailFile = await MediaPickerHelper.shared
-            .extractThumbnail(
-                videoPath: finalVideoFile.path);
+            .extractThumbnail(videoPath: finalVideoFile.path);
         if (finalThumbnailFile.path.isNotEmpty) {
           tempFiles.add(finalThumbnailFile.path);
         }
       } else {
-        return failedResponseSnackBar(
-            message: 'Color filter failed');
+        return failedResponseSnackBar(message: 'Color filter failed');
       }
     } else {
       Loggers.info('No color Add, using original video.');
@@ -1078,12 +974,10 @@ class CreateFeedScreenController extends BaseController {
     // Step 3: Optional compression
     if (setting.value?.isCompress == 1) {
       Loggers.info('Compressing video and thumbnail...');
-      XFile? compressVideoFile = await MediaPickerHelper
-          .shared
-          .compressVideo(finalVideoFile.path, '');
+      XFile? compressVideoFile =
+          await MediaPickerHelper.shared.compressVideo(finalVideoFile.path, '');
       if (compressVideoFile != null) {
-        if (compressVideoFile.path !=
-            finalVideoFile.path) {
+        if (compressVideoFile.path != finalVideoFile.path) {
           tempFiles.add(compressVideoFile.path);
         }
         finalVideoFile = compressVideoFile;
@@ -1094,20 +988,16 @@ class CreateFeedScreenController extends BaseController {
       if (finalThumbnailFile.path.isEmpty ||
           !File(finalThumbnailFile.path).existsSync()) {
         finalThumbnailFile = await MediaPickerHelper.shared
-            .extractThumbnail(
-                videoPath: finalVideoFile.path);
+            .extractThumbnail(videoPath: finalVideoFile.path);
         if (finalThumbnailFile.path.isNotEmpty) {
           tempFiles.add(finalThumbnailFile.path);
         }
       }
 
-      XFile? compressThumbFile =
-          await MediaPickerHelper.shared.compressImage(
-              finalThumbnailFile.path,
-              '${localPath}compress_video_thumb.jpg');
+      XFile? compressThumbFile = await MediaPickerHelper.shared.compressImage(
+          finalThumbnailFile.path, '${localPath}compress_video_thumb.jpg');
       if (compressThumbFile != null) {
-        if (compressThumbFile.path !=
-            finalThumbnailFile.path) {
+        if (compressThumbFile.path != finalThumbnailFile.path) {
           tempFiles.add(compressThumbFile.path);
         }
         finalThumbnailFile = compressThumbFile;
@@ -1119,8 +1009,7 @@ class CreateFeedScreenController extends BaseController {
     // Ensure thumbnail is always available and valid
     if (finalThumbnailFile.path.isEmpty ||
         !File(finalThumbnailFile.path).existsSync()) {
-      Loggers.warning(
-          'Thumbnail missing, regenerating from video...');
+      Loggers.warning('Thumbnail missing, regenerating from video...');
       finalThumbnailFile = await MediaPickerHelper.shared
           .extractThumbnail(videoPath: finalVideoFile.path);
       if (finalThumbnailFile.path.isNotEmpty) {
@@ -1131,8 +1020,7 @@ class CreateFeedScreenController extends BaseController {
     if (finalThumbnailFile.path.isEmpty ||
         !File(finalThumbnailFile.path).existsSync()) {
       return failedResponseSnackBar(
-          message:
-              'Thumbnail generation failed. Please try another video.');
+          message: 'Thumbnail generation failed. Please try another video.');
     }
 
     updateUploadingProgress(progress: 30);
@@ -1153,34 +1041,30 @@ class CreateFeedScreenController extends BaseController {
       );
     } catch (e) {
       return failedResponseSnackBar(
-          message:
-              'Failed to prepare video files for upload.');
+          message: 'Failed to prepare video files for upload.');
     }
 
     // Step 5: Upload video (with compressed retry for HTML/non-JSON/server-false responses)
     Loggers.info('Uploading video...');
     FilePathModel uploadedVideo;
     try {
-      uploadedVideo = await CommonService.instance
-          .uploadFileGivePath(uploadReadyVideo);
+      uploadedVideo =
+          await CommonService.instance.uploadFileGivePath(uploadReadyVideo);
     } catch (e) {
       Loggers.warning('Primary video upload failed: $e');
 
       if (_shouldRetryCompressedUpload(e)) {
         Loggers.info(
             'Retrying with compressed video due upload parser/server error...');
-        XFile? retryCompressedVideo =
-            await MediaPickerHelper.shared
-                .compressVideoLowQuality(
-                    finalVideoFile.path);
+        XFile? retryCompressedVideo = await MediaPickerHelper.shared
+            .compressVideoLowQuality(finalVideoFile.path);
 
         if (retryCompressedVideo != null &&
             retryCompressedVideo.path.isNotEmpty &&
             File(retryCompressedVideo.path).existsSync()) {
           tempFiles.add(retryCompressedVideo.path);
           finalVideoFile = retryCompressedVideo;
-          uploadReadyVideo =
-              await _createSafeUploadCopy(
+          uploadReadyVideo = await _createSafeUploadCopy(
             source: finalVideoFile,
             prefix: 'feed_video_retry',
             tempFiles: tempFiles,
@@ -1201,8 +1085,10 @@ class CreateFeedScreenController extends BaseController {
         }
       } else {
         return failedResponseSnackBar(
-            message:
-                'Video upload failed. Please try again.');
+            message: _resolveUploadFailureMessage(
+          e,
+          fallback: 'Video upload failed. Please try again.',
+        ));
       }
     }
 
@@ -1212,24 +1098,22 @@ class CreateFeedScreenController extends BaseController {
       Loggers.warning(
           'Video upload API returned invalid response: status=${uploadedVideo.status}, message=${uploadedVideo.message}, data=${uploadedVideo.data}');
 
-      XFile? retryCompressedVideo = await MediaPickerHelper
-          .shared
+      XFile? retryCompressedVideo = await MediaPickerHelper.shared
           .compressVideoLowQuality(finalVideoFile.path);
       if (retryCompressedVideo != null &&
           retryCompressedVideo.path.isNotEmpty &&
           File(retryCompressedVideo.path).existsSync()) {
         tempFiles.add(retryCompressedVideo.path);
         finalVideoFile = retryCompressedVideo;
-        uploadReadyVideo =
-            await _createSafeUploadCopy(
+        uploadReadyVideo = await _createSafeUploadCopy(
           source: finalVideoFile,
           prefix: 'feed_video_retry_status',
           tempFiles: tempFiles,
         );
         updateUploadingProgress(progress: 45);
         try {
-          uploadedVideo = await CommonService.instance
-              .uploadFileGivePath(uploadReadyVideo);
+          uploadedVideo =
+              await CommonService.instance.uploadFileGivePath(uploadReadyVideo);
         } catch (_) {}
       }
 
@@ -1237,23 +1121,21 @@ class CreateFeedScreenController extends BaseController {
           uploadedVideo.data == null ||
           uploadedVideo.data!.isEmpty) {
         return failedResponseSnackBar(
-            message:
-                uploadedVideo.message?.isNotEmpty == true
-                    ? uploadedVideo.message
-                    : 'Video upload failed. Please try a shorter video.');
+            message: uploadedVideo.message?.isNotEmpty == true
+                ? uploadedVideo.message
+                : 'Video upload failed. Please try a shorter video.');
       }
     }
 
     Loggers.info('Uploading thumbnail...');
     FilePathModel uploadedThumbnail;
     try {
-      uploadedThumbnail = await CommonService.instance
-          .uploadFileGivePath(uploadReadyThumbnail);
+      uploadedThumbnail =
+          await CommonService.instance.uploadFileGivePath(uploadReadyThumbnail);
     } catch (e) {
       deleteFiles(tempFiles);
       return failedResponseSnackBar(
-          message:
-              'Thumbnail upload failed. Please try again.');
+          message: 'Thumbnail upload failed. Please try again.');
     }
 
     if (uploadedThumbnail.status != true ||
@@ -1261,17 +1143,14 @@ class CreateFeedScreenController extends BaseController {
         uploadedThumbnail.data!.isEmpty) {
       deleteFiles(tempFiles);
       return failedResponseSnackBar(
-          message:
-              uploadedThumbnail.message ??
-                  'Thumbnail upload failed. Please try again.');
+          message: uploadedThumbnail.message ??
+              'Thumbnail upload failed. Please try again.');
     }
 
     deleteFiles(tempFiles);
     // Step 6: Check upload success
-    if (uploadedVideo.status == false ||
-        uploadedThumbnail.status == false) {
-      return failedResponseSnackBar(
-          message: uploadedVideo.message);
+    if (uploadedVideo.status == false || uploadedThumbnail.status == false) {
+      return failedResponseSnackBar(message: uploadedVideo.message);
     }
 
     updateUploadingProgress(progress: 90);
@@ -1282,13 +1161,12 @@ class CreateFeedScreenController extends BaseController {
 
     Loggers.success('Uploading final video post...');
     try {
-      final result = await AddPostStoryService.instance
-          .addPostFeedVideo(param: params);
+      final result =
+          await AddPostStoryService.instance.addPostFeedVideo(param: params);
 
       return result;
     } catch (e) {
-      Loggers.error(
-          'Exception while uploading video post: $e');
+      Loggers.error('Exception while uploading video post: $e');
       return failedResponseSnackBar(message: '$e');
     }
   }
@@ -1303,6 +1181,20 @@ class CreateFeedScreenController extends BaseController {
         errorText.contains('502') ||
         errorText.contains('503') ||
         errorText.contains('504');
+  }
+
+  String _resolveUploadFailureMessage(
+    Object error, {
+    required String fallback,
+  }) {
+    final normalized = error.toString().replaceFirst('Exception: ', '').trim();
+    if (normalized.isEmpty) {
+      return fallback;
+    }
+    if (normalized.length > 260) {
+      return '${normalized.substring(0, 260)}...';
+    }
+    return normalized;
   }
 
   Future<XFile> _createSafeUploadCopy({
@@ -1354,8 +1246,8 @@ class CreateFeedScreenController extends BaseController {
         PostUploadingProgress(
           uploadType: UploadType.none,
           progress: 0,
-          type: camera_types.CameraScreenType
-              .post, // or use last type if needed
+          type:
+              camera_types.CameraScreenType.post, // or use last type if needed
         ),
       );
     });
@@ -1364,8 +1256,7 @@ class CreateFeedScreenController extends BaseController {
   /// Navigate to appropriate destination based on content type
   Future<void> _navigateToCorrectDestination(
       Post post, CreateFeedType createType) async {
-    Loggers.info(
-        '🧭 Navigating to destination for ${createType.name}');
+    Loggers.info('🧭 Navigating to destination for ${createType.name}');
 
     // STEP 1: Dispose video player safely (ignore errors)
     try {
@@ -1374,19 +1265,15 @@ class CreateFeedScreenController extends BaseController {
       videoPlayerController.value = null;
     } catch (e) {
       // Ignore video player errors during disposal
-      Loggers.warning(
-          'Video player disposal (ignored): $e');
+      Loggers.warning('Video player disposal (ignored): $e');
     }
 
     // STEP 2: Close screens based on content type (using closeCurrentScreen to avoid snackbar errors)
-    if (createType == CreateFeedType.reel &&
-        content.value != null) {
+    if (createType == CreateFeedType.reel && content.value != null) {
       // Close all screens until we reach Dashboard
       // Use Get.until to close all screens until Dashboard
-      Get.until((route) =>
-          route.settings.name == '/DashboardScreen');
-      Loggers.success(
-          '🎬 Closed all reel creation screens');
+      Get.until((route) => route.settings.name == '/DashboardScreen');
+      Loggers.success('🎬 Closed all reel creation screens');
     } else {
       // Close only CreateFeedScreen for feed posts
       final navigator = Get.key.currentState;
@@ -1395,8 +1282,7 @@ class CreateFeedScreenController extends BaseController {
       } else {
         final context = Get.context;
         if (context != null) {
-          await Navigator.of(context, rootNavigator: true)
-              .maybePop();
+          await Navigator.of(context, rootNavigator: true).maybePop();
         }
       }
       Loggers.success('📰 Closed CreateFeedScreen');
@@ -1407,8 +1293,7 @@ class CreateFeedScreenController extends BaseController {
 
     // STEP 4: Navigate to profile tab
     if (Get.isRegistered<DashboardScreenController>()) {
-      final dashboardController =
-          Get.find<DashboardScreenController>();
+      final dashboardController = Get.find<DashboardScreenController>();
 
       // Navigate to profile tab
       dashboardController.onBottomIndexChanged?.call(4);
@@ -1422,24 +1307,21 @@ class CreateFeedScreenController extends BaseController {
     if (Get.isRegistered<ProfileScreenController>(
         tag: ProfileScreenController.tag)) {
       final profileController =
-          Get.find<ProfileScreenController>(
-              tag: ProfileScreenController.tag);
+          Get.find<ProfileScreenController>(tag: ProfileScreenController.tag);
 
       switch (createType) {
         case CreateFeedType.feed:
           // Switch to posts/feed tab in profile (index 1)
           profileController.selectedTabIndex.value = 1;
           profileController.pageController.jumpToPage(1);
-          Loggers.success(
-              '📰 Switched to Profile Posts tab (index 1)');
+          Loggers.success('📰 Switched to Profile Posts tab (index 1)');
           break;
 
         case CreateFeedType.reel:
           // Switch to reels tab in profile (index 0)
           profileController.selectedTabIndex.value = 0;
           profileController.pageController.jumpToPage(0);
-          Loggers.success(
-              '🎬 Switched to Profile Reels tab (index 0)');
+          Loggers.success('🎬 Switched to Profile Reels tab (index 0)');
           break;
       }
     }
@@ -1454,26 +1336,21 @@ class CreateFeedScreenController extends BaseController {
     switch (type) {
       case CreateFeedType.reel:
         message = '🎬 Reel uploaded successfully!';
-        backgroundColor =
-            Colors.purple.withValues(alpha: 0.9);
+        backgroundColor = Colors.purple.withValues(alpha: 0.9);
         icon = Icons.video_library_rounded;
         break;
       case CreateFeedType.feed:
         if (feedPostType.value == FeedPostType.image) {
           message = '📸 Photo post uploaded successfully!';
-          backgroundColor =
-              Colors.green.withValues(alpha: 0.9);
+          backgroundColor = Colors.green.withValues(alpha: 0.9);
           icon = Icons.photo_library_rounded;
-        } else if (feedPostType.value ==
-            FeedPostType.video) {
+        } else if (feedPostType.value == FeedPostType.video) {
           message = '🎥 Video post uploaded successfully!';
-          backgroundColor =
-              Colors.blue.withValues(alpha: 0.9);
+          backgroundColor = Colors.blue.withValues(alpha: 0.9);
           icon = Icons.video_library_rounded;
         } else {
           message = '📝 Text post uploaded successfully!';
-          backgroundColor =
-              Colors.orange.withValues(alpha: 0.9);
+          backgroundColor = Colors.orange.withValues(alpha: 0.9);
           icon = Icons.text_fields_rounded;
         }
         break;
@@ -1490,13 +1367,11 @@ class CreateFeedScreenController extends BaseController {
     Loggers.success('User notified: $message');
   }
 
-  Future<PostModel?> failedResponseSnackBar(
-      {String? message}) async {
+  Future<PostModel?> failedResponseSnackBar({String? message}) async {
     _lastUploadType = UploadType.error;
     updateUploadingProgress(progress: 100);
 
-    final errorMessage = (message == null ||
-            message.trim().isEmpty)
+    final errorMessage = (message == null || message.trim().isEmpty)
         ? 'Upload failed. Please try again.'
         : message.trim();
     _lastUploadErrorMessage = errorMessage;
@@ -1520,18 +1395,15 @@ class CreateFeedScreenController extends BaseController {
     Duration duration = const Duration(seconds: 3),
   }) {
     try {
-      final context =
-          Get.key.currentContext ?? Get.context;
+      final context = Get.key.currentContext ?? Get.context;
       if (context == null) {
-        Loggers.warning(
-            'Status message skipped: context unavailable');
+        Loggers.warning('Status message skipped: context unavailable');
         return;
       }
 
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) {
-        Loggers.warning(
-            'Status message skipped: messenger unavailable');
+        Loggers.warning('Status message skipped: messenger unavailable');
         return;
       }
 
@@ -1602,26 +1474,21 @@ class CreateFeedScreenController extends BaseController {
 
   Future<void> selectImages() async {
     final int remainingSlots =
-        setting.value?.maxImagesPerPost ??
-            AppRes.imageLimit - images.length;
+        setting.value?.maxImagesPerPost ?? AppRes.imageLimit - images.length;
 
     if (remainingSlots >= 2) {
-      final List<XFile> imageFiles = await MediaPickerHelper
-          .shared
-          .multipleImages(limit: remainingSlots);
+      final List<XFile> imageFiles =
+          await MediaPickerHelper.shared.multipleImages(limit: remainingSlots);
 
       images.addAll(imageFiles.map(
-        (file) =>
-            ImageWithFilter(media: file, thumbnail: file),
+        (file) => ImageWithFilter(media: file, thumbnail: file),
       ));
     } else {
-      final XFile? imageFile = await MediaPickerHelper
-          .shared
-          .pickImage(source: ImageSource.gallery);
+      final XFile? imageFile =
+          await MediaPickerHelper.shared.pickImage(source: ImageSource.gallery);
 
       if (imageFile != null) {
-        images.add(ImageWithFilter(
-            media: imageFile, thumbnail: imageFile));
+        images.add(ImageWithFilter(media: imageFile, thumbnail: imageFile));
       }
     }
     if (images.isNotEmpty) {
@@ -1649,22 +1516,21 @@ class CreateFeedScreenController extends BaseController {
   }
 
   pickVideo() async {
-    MediaFile? file = await MediaPickerHelper.shared
-        .pickVideo(source: ImageSource.gallery);
+    MediaFile? file =
+        await MediaPickerHelper.shared.pickVideo(source: ImageSource.gallery);
     if (file != null) {
-      video.value = ImageWithFilter(
-          media: file.file, thumbnail: file.thumbNail);
+      video.value =
+          ImageWithFilter(media: file.file, thumbnail: file.thumbNail);
       videoPlayerController.value =
           VideoPlayerController.file(File(file.file.path))
-            ..initialize().then(
-                (value) => videoPlayerController.refresh());
+            ..initialize().then((value) => videoPlayerController.refresh());
     }
     feedPostType.value = FeedPostType.video;
   }
 
   void onChangeReelCover() async {
-    XFile? file = await MediaPickerHelper.shared
-        .pickImage(source: ImageSource.gallery);
+    XFile? file =
+        await MediaPickerHelper.shared.pickImage(source: ImageSource.gallery);
     if (file != null) {
       Uint8List bytes = await file.readAsBytes();
       content.update((val) {
@@ -1728,14 +1594,11 @@ class ReelData {
     return ReelData(
         videoFile: videoFile ?? this.videoFile,
         thumbnailFile: thumbnailFile ?? this.thumbnailFile,
-        thumbnailBytes:
-            thumbnailBytes ?? this.thumbnailBytes,
+        thumbnailBytes: thumbnailBytes ?? this.thumbnailBytes,
         bgColor: bgColor ?? this.bgColor,
         selectedMusic: selectedMusic ?? this.selectedMusic,
-        videoDurationMs:
-            videoDurationMs ?? this.videoDurationMs,
-        selectedFilter:
-            selectedFilter ?? this.selectedFilter);
+        videoDurationMs: videoDurationMs ?? this.videoDurationMs,
+        selectedFilter: selectedFilter ?? this.selectedFilter);
   }
 }
 

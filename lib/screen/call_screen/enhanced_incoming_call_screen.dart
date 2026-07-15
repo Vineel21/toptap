@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shortzz/common/extensions/string_extension.dart';
 import 'package:shortzz/common/manager/call_notification_manager.dart';
 import 'package:shortzz/common/manager/logger.dart';
 
@@ -22,8 +23,7 @@ class EnhancedIncomingCallScreen extends StatefulWidget {
       _EnhancedIncomingCallScreenState();
 }
 
-class _EnhancedIncomingCallScreenState
-    extends State<EnhancedIncomingCallScreen>
+class _EnhancedIncomingCallScreenState extends State<EnhancedIncomingCallScreen>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _slideController;
@@ -47,16 +47,14 @@ class _EnhancedIncomingCallScreenState
     _hapticFeedback();
 
     // Set system UI overlay style for full-screen
-    SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.light,
     ));
 
-    Loggers.info(
-        '📞 🎭 Enhanced incoming call screen displayed');
+    Loggers.info('📞 🎭 Enhanced incoming call screen displayed');
   }
 
   void _initializeAnimations() {
@@ -114,8 +112,7 @@ class _EnhancedIncomingCallScreenState
   }
 
   void _startCallDurationTimer() {
-    _callDurationTimer =
-        Timer.periodic(const Duration(seconds: 1), (timer) {
+    _callDurationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           _callDuration = Duration(seconds: timer.tick);
@@ -152,8 +149,7 @@ class _EnhancedIncomingCallScreenState
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(height: 20),
@@ -197,15 +193,12 @@ class _EnhancedIncomingCallScreenState
 
   Widget _buildTopBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            widget.callData.isVideoCall
-                ? 'Video Call'
-                : 'Voice Call',
+            widget.callData.isVideoCall ? 'Video Call' : 'Voice Call',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -308,10 +301,9 @@ class _EnhancedIncomingCallScreenState
   }
 
   Widget _buildCallerImage() {
-    if (widget.callData.caller.profilePhoto?.isNotEmpty ==
-        true) {
+    if (widget.callData.caller.profilePhoto?.isNotEmpty == true) {
       return CachedNetworkImage(
-        imageUrl: widget.callData.caller.profilePhoto!,
+        imageUrl: widget.callData.caller.profilePhoto!.addBaseURL(),
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
           color: Colors.grey.shade300,
@@ -371,8 +363,7 @@ class _EnhancedIncomingCallScreenState
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(20),
@@ -381,17 +372,13 @@ class _EnhancedIncomingCallScreenState
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                widget.callData.isVideoCall
-                    ? Icons.videocam
-                    : Icons.call,
+                widget.callData.isVideoCall ? Icons.videocam : Icons.call,
                 color: Colors.white,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
-                widget.callData.isVideoCall
-                    ? 'Video Call'
-                    : 'Voice Call',
+                widget.callData.isVideoCall ? 'Video Call' : 'Voice Call',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -458,8 +445,7 @@ class _EnhancedIncomingCallScreenState
         animation: _pulseAnimation,
         builder: (context, child) {
           return Transform.scale(
-            scale:
-                1.0 + (_pulseAnimation.value - 1.0) * 0.1,
+            scale: 1.0 + (_pulseAnimation.value - 1.0) * 0.1,
             child: Container(
               width: 80,
               height: 80,
@@ -476,9 +462,7 @@ class _EnhancedIncomingCallScreenState
                 ],
               ),
               child: Icon(
-                widget.callData.isVideoCall
-                    ? Icons.videocam
-                    : Icons.call,
+                widget.callData.isVideoCall ? Icons.videocam : Icons.call,
                 color: Colors.white,
                 size: 32,
               ),
@@ -498,12 +482,10 @@ class _EnhancedIncomingCallScreenState
 
     try {
       HapticFeedback.mediumImpact();
-      Loggers.info(
-          '📞 ✅ User accepted call: ${widget.callData.callId}');
+      Loggers.info('📞 ✅ User accepted call: ${widget.callData.callId}');
 
       // Accept call through notification manager
-      await CallNotificationManager.instance
-          .acceptCall(widget.callData.callId);
+      await CallNotificationManager.instance.acceptCall(widget.callData.callId);
     } catch (e) {
       Loggers.error('📞 ❌ Error accepting call: $e');
 
@@ -535,8 +517,7 @@ class _EnhancedIncomingCallScreenState
       HapticFeedback.heavyImpact();
       _rotateController.forward();
 
-      Loggers.info(
-          '📞 ❌ User declined call: ${widget.callData.callId}');
+      Loggers.info('📞 ❌ User declined call: ${widget.callData.callId}');
 
       // Decline call through notification manager
       await CallNotificationManager.instance.declineCall(
@@ -561,10 +542,8 @@ class _EnhancedIncomingCallScreenState
 
   String _formatCallDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes =
-        twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds =
-        twoDigits(duration.inSeconds.remainder(60));
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 }
