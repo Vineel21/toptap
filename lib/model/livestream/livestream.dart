@@ -21,6 +21,7 @@ class Livestream {
   int? battleCreatedAt;
   int? isDummyLive;
   String? dummyUserLink;
+  bool commentsEnabled = true;
 
   // Live Goal fields
   bool? hasLiveGoal;
@@ -29,27 +30,29 @@ class Livestream {
   int? liveGoalTargetAmount;
   int? liveGoalCurrentAmount;
 
-  Livestream(
-      {this.watchingCount,
-      this.description,
-      this.type,
-      this.battleType,
-      this.isRestrictToJoin,
-      this.hostViewID,
-      this.roomID,
-      this.likeCount,
-      this.hostId,
-      this.coHostIds,
-      this.createdAt,
-      this.battleCreatedAt,
-      this.isDummyLive,
-      this.dummyUserLink,
-      this.battleDuration = AppRes.battleDurationInMinutes,
-      this.hasLiveGoal,
-      this.liveGoalTitle,
-      this.liveGoalType,
-      this.liveGoalTargetAmount,
-      this.liveGoalCurrentAmount});
+  Livestream({
+    this.watchingCount,
+    this.description,
+    this.type,
+    this.battleType,
+    this.isRestrictToJoin,
+    this.hostViewID,
+    this.roomID,
+    this.likeCount,
+    this.hostId,
+    this.coHostIds,
+    this.createdAt,
+    this.battleCreatedAt,
+    this.isDummyLive,
+    this.dummyUserLink,
+    this.commentsEnabled = true,
+    this.battleDuration = AppRes.battleDurationInMinutes,
+    this.hasLiveGoal,
+    this.liveGoalTitle,
+    this.liveGoalType,
+    this.liveGoalTargetAmount,
+    this.liveGoalCurrentAmount,
+  });
 
   Livestream.fromJson(Map<String, dynamic> json) {
     type = LivestreamType.fromString(json['type']);
@@ -61,21 +64,19 @@ class Livestream {
     roomID = json['room_id'];
     likeCount = json['like_count'];
     hostId = json['host_id'];
-    coHostIds = json['co-host_ids'] != null
-        ? json['co-host_ids'].cast<int>()
-        : [];
+    coHostIds =
+        json['co-host_ids'] != null ? json['co-host_ids'].cast<int>() : [];
     createdAt = json['created_at'];
     battleCreatedAt = json['battle_created_at'];
     isDummyLive = json['is_dummy_live'];
     dummyUserLink = json['dummy_user_link'];
-    battleDuration = json['battle_duration'] ??
-        AppRes.battleDurationInMinutes;
+    commentsEnabled = json['comments_enabled'] ?? true;
+    battleDuration = json['battle_duration'] ?? AppRes.battleDurationInMinutes;
     hasLiveGoal = json['has_live_goal'];
     liveGoalTitle = json['live_goal_title'];
     liveGoalType = json['live_goal_type'];
     liveGoalTargetAmount = json['live_goal_target_amount'];
-    liveGoalCurrentAmount =
-        json['live_goal_current_amount'];
+    liveGoalCurrentAmount = json['live_goal_current_amount'];
   }
 
   Map<String, dynamic> toJson() {
@@ -94,45 +95,41 @@ class Livestream {
     data['battle_created_at'] = battleCreatedAt;
     data['is_dummy_live'] = isDummyLive;
     data['dummy_user_link'] = dummyUserLink;
+    data['comments_enabled'] = commentsEnabled;
     data['battle_duration'] = battleDuration;
     data['has_live_goal'] = hasLiveGoal;
     data['live_goal_title'] = liveGoalTitle;
     data['live_goal_type'] = liveGoalType;
     data['live_goal_target_amount'] = liveGoalTargetAmount;
-    data['live_goal_current_amount'] =
-        liveGoalCurrentAmount;
+    data['live_goal_current_amount'] = liveGoalCurrentAmount;
     return data;
   }
 
   List<AppUser> getAllUsers(List<AppUser> users) {
     AppUser? hostUser = users.firstWhereOrNull(
-        (element) => element.userId == hostId);
+      (element) => element.userId == hostId,
+    );
     final coHostUsers = coHostIds
-            ?.map((id) => users.firstWhereOrNull(
-                (user) => user.userId == id))
+            ?.map((id) => users.firstWhereOrNull((user) => user.userId == id))
             .whereType<AppUser>()
             .toList() ??
         [];
 
-    final allUsers = [
-      if (hostUser != null) hostUser,
-      ...coHostUsers
-    ];
+    final allUsers = [if (hostUser != null) hostUser, ...coHostUsers];
     return allUsers;
   }
 
   AppUser? getHostUser(List<AppUser> users) {
-    final controller =
-        Get.find<FirebaseFirestoreController>();
+    final controller = Get.find<FirebaseFirestoreController>();
     AppUser? hostUser = controller.users.firstWhereOrNull(
-        (element) => element.userId == hostId);
+      (element) => element.userId == hostId,
+    );
     return hostUser;
   }
 
   List<AppUser> getCoHostUsers(List<AppUser> users) {
     final coHostUsers = coHostIds
-            ?.map((id) => users.firstWhereOrNull(
-                (user) => user.userId == id))
+            ?.map((id) => users.firstWhereOrNull((user) => user.userId == id))
             .whereType<AppUser>()
             .toList() ??
         [];
@@ -150,8 +147,7 @@ enum LivestreamType {
   const LivestreamType(this.value);
 
   static LivestreamType fromString(String value) {
-    return LivestreamType.values
-            .firstWhereOrNull((e) => e.value == value) ??
+    return LivestreamType.values.firstWhereOrNull((e) => e.value == value) ??
         LivestreamType.livestream;
   }
 }
@@ -167,8 +163,7 @@ enum BattleType {
   const BattleType(this.value);
 
   static BattleType fromString(String? value) {
-    return BattleType.values
-            .firstWhereOrNull((e) => e.value == value) ??
+    return BattleType.values.firstWhereOrNull((e) => e.value == value) ??
         BattleType.initiate;
   }
 }

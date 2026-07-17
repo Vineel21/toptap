@@ -16,34 +16,45 @@ class LiveStreamTextFieldView extends StatelessWidget {
   final bool isAudience;
   final LivestreamScreenController controller;
 
-  const LiveStreamTextFieldView(
-      {super.key, required this.isAudience, required this.controller});
+  const LiveStreamTextFieldView({
+    super.key,
+    required this.isAudience,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       Livestream stream = controller.liveData.value;
       bool isTextEmpty = controller.isTextEmpty.value;
+      bool commentsEnabled = stream.commentsEnabled;
       bool isBattleON = stream.type == LivestreamType.battle;
-      bool isGiftIconVisible = controller.streamViews.firstWhereOrNull(
-              (view) => view.streamId == controller.myUserId.toString()) ==
+      bool isGiftIconVisible =
+          controller.streamViews.firstWhereOrNull(
+            (view) => view.streamId == controller.myUserId.toString(),
+          ) ==
           null;
 
-      List<AppUser> users =
-          stream.getAllUsers(controller.firestoreController.users);
+      List<AppUser> users = stream.getAllUsers(
+        controller.firestoreController.users,
+      );
 
       return Container(
         height: 43,
         margin: const EdgeInsets.symmetric(vertical: 10),
         decoration: ShapeDecoration(
-            shape: SmoothRectangleBorder(
-                borderRadius:
-                    SmoothBorderRadius(cornerRadius: 30, cornerSmoothing: 1),
-                side: BorderSide(
-                    color: whitePure(context).withValues(alpha: .18))),
-            color: whitePure(context).withValues(alpha: .15)),
+          shape: SmoothRectangleBorder(
+            borderRadius: SmoothBorderRadius(
+              cornerRadius: 30,
+              cornerSmoothing: 1,
+            ),
+            side: BorderSide(color: whitePure(context).withValues(alpha: .18)),
+          ),
+          color: whitePure(context).withValues(alpha: .15),
+        ),
         child: TextField(
           controller: controller.textCommentController,
+          readOnly: !commentsEnabled,
           onChanged: (value) {
             controller.isTextEmpty.value = value.isEmpty ? true : false;
           },
@@ -51,10 +62,16 @@ class LiveStreamTextFieldView extends StatelessWidget {
           decoration: InputDecoration(
             border: InputBorder.none,
             isCollapsed: true,
-            hintText:
-                isAudience ? '${LKey.writeHere.tr}..' : LKey.whatDoYouThink.tr,
+            hintText: !commentsEnabled
+                ? 'Comments are off'
+                : isAudience
+                ? '${LKey.writeHere.tr}..'
+                : LKey.whatDoYouThink.tr,
             hintStyle: TextStyleCustom.outFitLight300(
-                color: whitePure(context), fontSize: 17, opacity: .42),
+              color: whitePure(context),
+              fontSize: 17,
+              opacity: .42,
+            ),
             contentPadding: const EdgeInsets.only(left: 10, right: 10),
             suffixIconConstraints: const BoxConstraints(),
             suffixIcon: TextFieldSuffixIcon(
@@ -67,7 +84,9 @@ class LiveStreamTextFieldView extends StatelessWidget {
             ),
           ),
           style: TextStyleCustom.outFitRegular400(
-              color: whitePure(context), fontSize: 17),
+            color: whitePure(context),
+            fontSize: 17,
+          ),
           cursorColor: whitePure(context).withValues(alpha: .6),
           onTapOutside: (event) =>
               FocusManager.instance.primaryFocus?.unfocus(),
@@ -97,7 +116,8 @@ class TextFieldSuffixIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool showGiftIconsForBattle = isTextEmpty &&
+    final bool showGiftIconsForBattle =
+        isTextEmpty &&
         isAudience &&
         isBattleOn &&
         isGiftIconVisible &&
@@ -112,37 +132,37 @@ class TextFieldSuffixIcon extends StatelessWidget {
       child: !isTextEmpty
           ? _sendButton(context)
           : showGiftIconsForBattle
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GiftIcon(
-                      bgColor: ColorRes.likeRed,
-                      onTap: () => controller.onGiftTap(
-                        GiftType.battle,
-                        battleViewType: BattleView.red,
-                        users: [users.first],
-                      ),
-                    ),
-                    GiftIcon(
-                      bgColor: ColorRes.battleProgressColor,
-                      onTap: () => controller.onGiftTap(
-                        GiftType.battle,
-                        battleViewType: BattleView.blue,
-                        users: [users.last],
-                      ),
-                    ),
-                  ],
-                )
-              : showSendButton && isTextEmpty && !isAudience
-                  ? _sendButton(context)
-                  : isBattleOn && isAudience
-                      ? _sendButton(context)
-                      : !isTextEmpty
-                          ? _sendButton(context)
-                          : GiftIcon(
-                              onTap: () => controller
-                                  .onGiftTap(GiftType.livestream, users: users),
-                            ),
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GiftIcon(
+                  bgColor: ColorRes.likeRed,
+                  onTap: () => controller.onGiftTap(
+                    GiftType.battle,
+                    battleViewType: BattleView.red,
+                    users: [users.first],
+                  ),
+                ),
+                GiftIcon(
+                  bgColor: ColorRes.battleProgressColor,
+                  onTap: () => controller.onGiftTap(
+                    GiftType.battle,
+                    battleViewType: BattleView.blue,
+                    users: [users.last],
+                  ),
+                ),
+              ],
+            )
+          : showSendButton && isTextEmpty && !isAudience
+          ? _sendButton(context)
+          : isBattleOn && isAudience
+          ? _sendButton(context)
+          : !isTextEmpty
+          ? _sendButton(context)
+          : GiftIcon(
+              onTap: () =>
+                  controller.onGiftTap(GiftType.livestream, users: users),
+            ),
     );
   }
 
@@ -185,8 +205,12 @@ class GiftIcon extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: Image.asset(AssetRes.icGift,
-            height: 20, width: 20, color: whitePure(context)),
+        child: Image.asset(
+          AssetRes.icGift,
+          height: 20,
+          width: 20,
+          color: whitePure(context),
+        ),
       ),
     );
   }

@@ -27,15 +27,14 @@ import 'package:shortzz/screen/splash_screen/splash_screen.dart';
 import 'package:shortzz/utilities/theme_res.dart';
 
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(
-    RemoteMessage message) async {
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  if (Platform.isIOS) {
-    FirebaseNotificationManager.instance
-        .showNotification(message);
+  if (message.data['type'] == 'call' && Platform.isAndroid) {
+    await showBackgroundIncomingCallNotification(message);
+  } else if (Platform.isIOS && message.data['type'] != 'call') {
+    FirebaseNotificationManager.instance.showNotification(message);
   }
-  Loggers.success(
-      "Handling background message: ${message.data}");
+  Loggers.success("Handling background message: ${message.data}");
   print("✅ Background Message: ${message.data}");
 }
 
@@ -62,8 +61,7 @@ Future<void> main() async {
   await Firebase.initializeApp();
   print('✅ Firebase initialized');
 
-  FirebaseMessaging.onBackgroundMessage(
-      _firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   print('🔄 Initializing GetStorage...');
   await GetStorage.init('shortzz');
@@ -76,8 +74,7 @@ Future<void> main() async {
     print('✅ SubscriptionManager initialized');
   } catch (e, st) {
     print('❌ SubscriptionManager init error: $e');
-    Loggers.error(
-        'SubscriptionManager init error: $e\n$st');
+    Loggers.error('SubscriptionManager init error: $e\n$st');
   }
 
   print('🔄 Initializing Mobile Ads...');
@@ -129,8 +126,7 @@ Future<void> main() async {
     print('✅ Call Notification Manager initialized');
   } catch (e, st) {
     print('❌ Call Notification Manager init error: $e');
-    Loggers.error(
-        'Call Notification Manager init error: $e\n$st');
+    Loggers.error('Call Notification Manager init error: $e\n$st');
   }
 
   print('🚀 Launching App...');
@@ -206,27 +202,23 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     print('🔧 MyApp build triggered');
 
-    final ThemeController themeController =
-        Get.find<ThemeController>();
+    final ThemeController themeController = Get.find<ThemeController>();
 
     return Obx(() {
       print(
-          '🔁 Rebuilding due to theme change: ${themeController.themeMode.value}');
+        '🔁 Rebuilding due to theme change: ${themeController.themeMode.value}',
+      );
 
       return GetMaterialApp(
-        builder: (context, child) => ScrollConfiguration(
-          behavior: MyBehavior(),
-          child: child!,
-        ),
+        builder: (context, child) =>
+            ScrollConfiguration(behavior: MyBehavior(), child: child!),
         onReady: () {
           print('🌐 Listening for Internet Connection...');
-          InternetConnectionManager.instance
-              .listenNoInternetConnection();
+          InternetConnectionManager.instance.listenNoInternetConnection();
         },
         translations: Get.find<DynamicTranslations>(),
         locale: Locale(SessionManager.instance.getLang()),
-        fallbackLocale: Locale(
-            SessionManager.instance.getFallbackLang()),
+        fallbackLocale: Locale(SessionManager.instance.getFallbackLang()),
         themeMode: themeController.themeMode.value,
         darkTheme: ThemeRes.darkTheme(context),
         theme: ThemeRes.lightTheme(context),
@@ -248,52 +240,9 @@ class MyBehavior extends ScrollBehavior {
   }
 }
 
-
-
 /**
  * The issue was in the complex BoxFit.cover coordinate conversion logic in the ffmpeg_video_service.dart file. The system was using overly complex calculations with offset adjustments that were incorrectly mapping UI coordinates to video coordinates.
  */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Below is working code
 // import 'dart:async';
@@ -406,7 +355,6 @@ class MyBehavior extends ScrollBehavior {
 //     return child;
 //   }
 // }
-
 
 // Below is the old main
 

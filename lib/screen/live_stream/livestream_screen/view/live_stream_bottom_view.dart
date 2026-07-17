@@ -34,46 +34,38 @@ class LiveStreamBottomView extends StatelessWidget {
           children: [
             const BlackGradientShadow(height: 200),
             // Floating Right Controls (positioned absolutely)
-            Obx(() => Positioned(
-                  right: 15,
-                  bottom: 80,
-                  child: AnimatedSlide(
-                    duration:
-                        const Duration(milliseconds: 300),
-                    offset: controller
-                            .isRightControlsVisible.value
-                        ? Offset.zero
-                        : const Offset(0, 1),
-                    child: AnimatedOpacity(
-                      duration:
-                          const Duration(milliseconds: 200),
-                      opacity: controller
-                              .isRightControlsVisible.value
-                          ? 1.0
-                          : 0.0,
-                      child: controller
-                              .isRightControlsVisible.value
-                          ? _buildRightControls(context)
-                          : const SizedBox.shrink(),
-                    ),
+            Obx(
+              () => Positioned(
+                right: 15,
+                bottom: 80,
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 300),
+                  offset: controller.isRightControlsVisible.value
+                      ? Offset.zero
+                      : const Offset(0, 1),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity:
+                        controller.isRightControlsVisible.value ? 1.0 : 0.0,
+                    child: controller.isRightControlsVisible.value
+                        ? _buildRightControls(context)
+                        : const SizedBox.shrink(),
                   ),
-                )),
+                ),
+              ),
+            ),
             Column(
               children: [
                 // Comments Section
                 Expanded(
                   child: Obx(() {
-                    bool isVisible =
-                        controller.isViewVisible.value;
+                    bool isVisible = controller.isViewVisible.value;
                     return AnimatedOpacity(
-                      duration:
-                          const Duration(milliseconds: 200),
+                      duration: const Duration(milliseconds: 200),
                       opacity: isVisible ? 1 : 0,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 10),
-                        child: LiveStreamCommentView(
-                            controller: controller),
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        child: LiveStreamCommentView(controller: controller),
                       ),
                     );
                   }),
@@ -81,23 +73,23 @@ class LiveStreamBottomView extends StatelessWidget {
                 // Bottom Controls Row
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 15, vertical: 2),
+                    horizontal: 15,
+                    vertical: 2,
+                  ),
                   child: _buildBottomControlsRow(context),
                 ),
                 // Host Controls (if user is host/co-host)
                 _buildHostControls(),
                 // Exit Message Bar
                 Obx(() {
-                  Livestream stream =
-                      controller.liveData.value;
-                  if ((stream.type ==
-                              LivestreamType.battle &&
-                          stream.battleType ==
-                              BattleType.end) ||
+                  Livestream stream = controller.liveData.value;
+                  if ((stream.type == LivestreamType.battle &&
+                          stream.battleType == BattleType.end) ||
                       controller.isMinViewerTimeout.value) {
                     return LivestreamExistMessageBar(
-                        controller: controller,
-                        stream: stream);
+                      controller: controller,
+                      stream: stream,
+                    );
                   } else {
                     return const SizedBox();
                   }
@@ -129,18 +121,16 @@ class LiveStreamBottomView extends StatelessWidget {
                     GestureDetector(
                       onTap: controller.toggleView,
                       child: AnimatedRotation(
-                        duration: const Duration(
-                            milliseconds: 200),
+                        duration: const Duration(milliseconds: 200),
                         turns: isVisible ? 0 : 0.5,
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.black
-                                .withOpacity(0.5),
+                            color: Colors.black.withOpacity(0.5),
                             shape: BoxShape.circle,
                             border: Border.all(
-                                color: Colors.white
-                                    .withOpacity(0.3)),
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                           ),
                           child: const Icon(
                             Icons.keyboard_arrow_down,
@@ -181,15 +171,11 @@ class LiveStreamBottomView extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.5),
                 shape: BoxShape.circle,
-                border: Border.all(
-                    color: Colors.white.withOpacity(0.3)),
+                border: Border.all(color: Colors.white.withOpacity(0.3)),
               ),
               child: AnimatedRotation(
                 duration: const Duration(milliseconds: 200),
-                turns:
-                    controller.isRightControlsVisible.value
-                        ? 0.5
-                        : 0,
+                turns: controller.isRightControlsVisible.value ? 0.5 : 0,
                 child: const Icon(
                   Icons.keyboard_arrow_up,
                   color: Colors.white,
@@ -206,17 +192,15 @@ class LiveStreamBottomView extends StatelessWidget {
   Widget _buildHostControls() {
     return Obx(() {
       int? userId = controller.myUser.value?.id;
-      LivestreamUserState? state =
-          controller.liveUsersStates.firstWhereOrNull(
-              (element) => element.userId == userId);
-      final isHostOrCoHost =
-          state?.type == LivestreamUserType.host ||
-              state?.type == LivestreamUserType.coHost;
+      LivestreamUserState? state = controller.liveUsersStates.firstWhereOrNull(
+        (element) => element.userId == userId,
+      );
+      final isHostOrCoHost = state?.type == LivestreamUserType.host ||
+          state?.type == LivestreamUserType.coHost;
       bool isMute = state?.isMuted ?? false;
       bool isVideoOn = state?.isVideoOn ?? false;
       Livestream stream = controller.liveData.value;
-      bool isBattleRunning =
-          stream.battleType == BattleType.running;
+      bool isBattleRunning = stream.battleType == BattleType.running;
       if (!isHostOrCoHost) return const SizedBox();
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
@@ -226,39 +210,46 @@ class LiveStreamBottomView extends StatelessWidget {
             if (LivestreamUserType.coHost == state?.type &&
                 stream.type == LivestreamType.livestream)
               IconButton(
-                icon: const Icon(Icons.close,
-                    color: Colors.red),
+                icon: const Icon(Icons.close, color: Colors.red),
                 onPressed: () {
                   if (isBattleRunning) {
-                    controller.showSnackBar(
-                        'Cannot leave during battle');
+                    controller.showSnackBar('Cannot leave during battle');
                   } else {
                     controller.closeCoHostStream(userId);
                   }
                 },
               ),
             IconButton(
-              icon: const Icon(Icons.flip_camera_ios,
-                  color: Colors.white),
+              icon: const Icon(Icons.flip_camera_ios, color: Colors.white),
               onPressed: controller.toggleFlipCamera,
             ),
             IconButton(
-              icon: Icon(isMute ? Icons.mic_off : Icons.mic,
-                  color:
-                      isMute ? Colors.red : Colors.white),
+              icon: Icon(
+                isMute ? Icons.mic_off : Icons.mic,
+                color: isMute ? Colors.red : Colors.white,
+              ),
               onPressed: () => controller.toggleMic(isMute),
             ),
             IconButton(
               icon: Icon(
-                  isVideoOn
-                      ? Icons.videocam
-                      : Icons.videocam_off,
-                  color: isVideoOn
-                      ? Colors.white
-                      : Colors.red),
-              onPressed: () =>
-                  controller.toggleVideo(isVideoOn),
+                isVideoOn ? Icons.videocam : Icons.videocam_off,
+                color: isVideoOn ? Colors.white : Colors.red,
+              ),
+              onPressed: () => controller.toggleVideo(isVideoOn),
             ),
+            if (state?.type == LivestreamUserType.host)
+              IconButton(
+                tooltip: stream.commentsEnabled
+                    ? 'Turn comments off'
+                    : 'Turn comments on',
+                icon: Icon(
+                  stream.commentsEnabled
+                      ? Icons.mode_comment_outlined
+                      : Icons.comments_disabled_outlined,
+                  color: stream.commentsEnabled ? Colors.white : Colors.red,
+                ),
+                onPressed: controller.toggleCommentsEnabled,
+              ),
           ],
         ),
       );
@@ -278,14 +269,12 @@ class LiveStreamBottomView extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.5),
           borderRadius: BorderRadius.circular(25),
-          border: Border.all(
-              color: Colors.white.withOpacity(0.3)),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.people,
-                color: Colors.white, size: 20),
+            Icon(Icons.people, color: Colors.white, size: 20),
             SizedBox(width: 6),
           ],
         ),
@@ -336,14 +325,9 @@ class LiveStreamBottomView extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.5),
           shape: BoxShape.circle,
-          border: Border.all(
-              color: Colors.white.withOpacity(0.3)),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 18,
-        ),
+        child: Icon(icon, color: Colors.white, size: 18),
       ),
     );
   }
@@ -377,27 +361,22 @@ class LiveStreamBottomView extends StatelessWidget {
               crossAxisSpacing: 15,
               mainAxisSpacing: 15,
               children: [
-                _buildFilterOption('Smooth', Icons.blur_on,
-                    () {
+                _buildFilterOption('Smooth', Icons.blur_on, () {
                   Get.back();
                 }),
-                _buildFilterOption(
-                    'Brighten', Icons.brightness_high, () {
+                _buildFilterOption('Brighten', Icons.brightness_high, () {
                   Get.back();
                 }),
-                _buildFilterOption(
-                    'Eyes', Icons.remove_red_eye, () {
+                _buildFilterOption('Eyes', Icons.remove_red_eye, () {
                   Get.back();
                 }),
                 _buildFilterOption('Face', Icons.face, () {
                   Get.back();
                 }),
-                _buildFilterOption('Lips', Icons.favorite,
-                    () {
+                _buildFilterOption('Lips', Icons.favorite, () {
                   Get.back();
                 }),
-                _buildFilterOption('Reset', Icons.refresh,
-                    () {
+                _buildFilterOption('Reset', Icons.refresh, () {
                   Get.back();
                 }),
               ],
@@ -436,16 +415,14 @@ class LiveStreamBottomView extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterOption(
-      String title, IconData icon, VoidCallback onTap) {
+  Widget _buildFilterOption(String title, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.grey[800],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -490,14 +467,16 @@ class LiveStreamBottomView extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildShareOption(
-                    'WhatsApp', Icons.message),
-                _buildShareOption(
-                    'Instagram', Icons.camera_alt),
-                _buildShareOption('Copy Link', Icons.link),
+                _buildShareOption('Share', Icons.ios_share, () {
+                  Get.back();
+                  controller.shareLiveStream();
+                }),
+                _buildShareOption('Copy Invite', Icons.copy, () {
+                  Get.back();
+                  controller.copyLiveStreamInvite();
+                }),
               ],
             ),
             const SizedBox(height: 20),
@@ -507,106 +486,31 @@ class LiveStreamBottomView extends StatelessWidget {
     );
   }
 
-  Widget _buildShareOption(String title, IconData icon) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.grey[800],
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.white),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  void _showMoreOptions(BuildContext context) {
-    int? userId = controller.myUser.value?.id;
-    LivestreamUserState? state = controller.liveUsersStates
-        .firstWhereOrNull(
-            (element) => element.userId == userId);
-    bool isMute = state?.isMuted ?? false;
-    bool isVideoOn = state?.isVideoOn ?? false;
-
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
+  Widget _buildShareOption(String title, IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(40),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'More Options',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                shape: BoxShape.circle,
               ),
+              child: Icon(icon, color: Colors.white),
             ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.flip_camera_ios,
-                  color: Colors.white),
-              title: const Text('Flip Camera',
-                  style: TextStyle(color: Colors.white)),
-              onTap: () {
-                controller.toggleCamera();
-                Get.back();
-              },
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
-            ListTile(
-              leading: Icon(
-                isMute ? Icons.mic_off : Icons.mic,
-                color: isMute ? Colors.red : Colors.white,
-              ),
-              title: Text(
-                isMute
-                    ? 'Turn On Microphone'
-                    : 'Turn Off Microphone',
-                style: const TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                controller.toggleMic(isMute);
-                Get.back();
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                isVideoOn
-                    ? Icons.videocam
-                    : Icons.videocam_off,
-                color:
-                    isVideoOn ? Colors.white : Colors.red,
-              ),
-              title: Text(
-                isVideoOn
-                    ? 'Turn Off Camera'
-                    : 'Turn On Camera',
-                style: const TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                controller.toggleVideo(isVideoOn);
-                Get.back();
-              },
-            ),
-            const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
+
 }

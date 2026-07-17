@@ -40,4 +40,5 @@ class FirebaseConst {
   static const String coHostIds = 'co-host_ids';
   static const String joinStreamTime = 'join_stream_time';
   static const String likeCount = 'like_count';
+  static const String commentsEnabled = 'comments_enabled';
 }

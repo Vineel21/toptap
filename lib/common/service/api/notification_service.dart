@@ -17,30 +17,34 @@ class NotificationService {
 
   static final NotificationService instance = NotificationService._();
 
-  Future<List<AdminNotificationData>> fetchAdminNotifications(
-      {int? lastItemId}) async {
+  Future<List<AdminNotificationData>> fetchAdminNotifications({
+    int? lastItemId,
+  }) async {
     AdminNotificationModel response = await ApiService.instance.call(
-        url: WebService.notification.fetchAdminNotifications,
-        fromJson: AdminNotificationModel.fromJson,
-        param: {
-          Params.limit: AppRes.paginationLimit,
-          Params.lastItemId: lastItemId
-        });
+      url: WebService.notification.fetchAdminNotifications,
+      fromJson: AdminNotificationModel.fromJson,
+      param: {
+        Params.limit: AppRes.paginationLimit,
+        Params.lastItemId: lastItemId,
+      },
+    );
     if (response.status == true) {
       return response.data ?? [];
     }
     return [];
   }
 
-  Future<List<ActivityNotification>> fetchActivityNotifications(
-      {int? lastItemId}) async {
+  Future<List<ActivityNotification>> fetchActivityNotifications({
+    int? lastItemId,
+  }) async {
     ActivityNotificationModel response = await ApiService.instance.call(
-        url: WebService.notification.fetchActivityNotifications,
-        fromJson: ActivityNotificationModel.fromJson,
-        param: {
-          Params.limit: AppRes.paginationLimit,
-          Params.lastItemId: lastItemId,
-        });
+      url: WebService.notification.fetchActivityNotifications,
+      fromJson: ActivityNotificationModel.fromJson,
+      param: {
+        Params.limit: AppRes.paginationLimit,
+        Params.lastItemId: lastItemId,
+      },
+    );
     if (response.status == true) {
       return response.data ?? [];
     } else {
@@ -48,40 +52,48 @@ class NotificationService {
     }
   }
 
-  Future<bool> pushNotification(
-      {required NotificationType type,
-      required String title,
-      required String body,
-      Map<String, dynamic>? data,
-      String? token,
-      String? topic,
-      num? deviceType,
-      String? authorizationToken}) async {
+  Future<bool> pushNotification({
+    required NotificationType type,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+    String? token,
+    String? topic,
+    num? deviceType,
+    String? authorizationToken,
+  }) async {
     bool isIOS = deviceType == 1;
 
     Map<String, dynamic> messageData = {
       "apns": {
         "headers": {
-          "apns-priority": "10"
+          "apns-priority": "10",
           //  Required for visible alerts
           // "apns-priority": "5" // Used only for silent background notifications
         },
         "payload": {
           "aps": {
             "sound": "default",
-            "content-available": 1 // Required for background notifications
-          }
-        }
+            "content-available": 1,
+            if (type == NotificationType.call) ...{
+              "alert": {"title": title, "body": body},
+              "category": "incoming_call",
+            },
+          },
+        },
       },
       "data": {
         "title": title,
         "body": body,
         'type': type.type,
-        if (data != null) "notification_data": jsonEncode(data)
-      }
+        if (data != null) "notification_data": jsonEncode(data),
+      },
     };
-    if (!isIOS) {
+    if (!isIOS && type != NotificationType.call) {
       messageData["notification"] = {"body": body, "title": title};
+    }
+    if (!isIOS && type == NotificationType.call) {
+      messageData["android"] = {"priority": "high", "ttl": "45s"};
     }
     if (token != null) {
       messageData["token"] = token;
@@ -93,17 +105,19 @@ class NotificationService {
     Map<String, dynamic> inputData = {"message": messageData};
     try {
       http.Response response = await http.post(
-          Uri.parse(WebService.notification.pushNotificationToSingleUser),
-          headers: {
-            Params.apikey: apiKey,
-            Params.authToken:
-                authorizationToken ?? SessionManager.instance.getAuthToken()
-          },
-          body: json.encode(inputData));
+        Uri.parse(WebService.notification.pushNotificationToSingleUser),
+        headers: {
+          Params.apikey: apiKey,
+          Params.authToken:
+              authorizationToken ?? SessionManager.instance.getAuthToken(),
+        },
+        body: json.encode(inputData),
+      );
       Loggers.success('Notification response : ${response.body}');
       if (response.statusCode < 200 || response.statusCode >= 300) {
         Loggers.error(
-            'Notification push failed with status: ${response.statusCode}');
+          'Notification push failed with status: ${response.statusCode}',
+        );
         return false;
       }
 
@@ -115,7 +129,8 @@ class NotificationService {
             return true;
           }
           Loggers.error(
-              'Notification push API returned unsuccessful result: $result');
+            'Notification push API returned unsuccessful result: $result',
+          );
           return false;
         }
       } catch (_) {

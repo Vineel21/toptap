@@ -30,11 +30,8 @@ import 'package:shortzz/screen/reels_screen/reels_screen_controller.dart';
 import 'package:shortzz/utilities/app_res.dart';
 
 class HomeScreenController extends BaseController
-    with
-        GetSingleTickerProviderStateMixin,
-        WidgetsBindingObserver {
-  Rx<TabType> selectedReelCategory =
-      TabType.values.first.obs;
+    with GetSingleTickerProviderStateMixin, WidgetsBindingObserver {
+  Rx<TabType> selectedReelCategory = TabType.values.first.obs;
   RxList<Post> reels = <Post>[].obs;
   late AnimationController controller;
   late Animation<double> animation;
@@ -42,19 +39,17 @@ class HomeScreenController extends BaseController
   StreamSubscription<Map>? streamSubscription;
   CancelToken token = CancelToken();
 
-  Rx<User?> get myUser =>
-      Rx(SessionManager.instance.getUser());
+  Rx<User?> get myUser => Rx(SessionManager.instance.getUser());
 
   @override
   void onInit() {
-    WidgetsBinding.instance
-        .addObserver(this); // Register observer
+    WidgetsBinding.instance.addObserver(this); // Register observer
 
     controller = AnimationController(
-        duration: const Duration(milliseconds: 250),
-        vsync: this);
-    animation = CurvedAnimation(
-        parent: controller, curve: Curves.linear);
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    animation = CurvedAnimation(parent: controller, curve: Curves.linear);
 
     // Call both methods concurrently
     Future.wait([
@@ -75,8 +70,7 @@ class HomeScreenController extends BaseController
 
   @override
   void onClose() {
-    WidgetsBinding.instance
-        .removeObserver(this); // Unregister observer
+    WidgetsBinding.instance.removeObserver(this); // Unregister observer
 
     super.onClose();
     controller.dispose();
@@ -105,80 +99,84 @@ class HomeScreenController extends BaseController
   }
 
   Future<void> _onNotificationTap() async {
-    if (Platform.isIOS) {
-      // Handle the iOS notification payload once
-      final payload = FirebaseNotificationManager
-          .instance.notificationPayload.value;
-      if (payload.isNotEmpty) {
-        FirebaseNotificationManager.instance
-            .handleNotification(payload);
-      }
-    } else {
+    // Local notifications (including background call notifications) retain
+    // their payload separately from FirebaseMessaging.getInitialMessage().
+    final localPayload =
+        FirebaseNotificationManager.instance.notificationPayload.value;
+    if (localPayload.isNotEmpty) {
+      await FirebaseNotificationManager.instance.handleNotification(
+        localPayload,
+      );
+      FirebaseNotificationManager.instance.notificationPayload.value = '';
+    }
+
+    if (!Platform.isIOS) {
       // Set up a listener to handle future payload changes
       // Android: Get the message if the app was opened via notification
-      RemoteMessage? message = await FirebaseMessaging
-          .instance
+      RemoteMessage? message = await FirebaseMessaging.instance
           .getInitialMessage();
 
       if (message != null) {
-        await FirebaseNotificationManager.instance
-            .handleNotification(
-                jsonEncode(message.toMap()));
+        await FirebaseNotificationManager.instance.handleNotification(
+          jsonEncode(message.toMap()),
+        );
       }
     }
 
-    FirebaseNotificationManager.instance.notificationPayload
-        .listen((p0) {
+    FirebaseNotificationManager.instance.notificationPayload.listen((p0) {
       if (p0.isNotEmpty) {
-        FirebaseNotificationManager.instance
-            .handleNotification(p0);
+        FirebaseNotificationManager.instance.handleNotification(p0);
+        FirebaseNotificationManager.instance.notificationPayload.value = '';
       }
     });
   }
 
   Future<void> _readDeepLink() async {
-    streamSubscription =
-        FlutterBranchSdk.listSession().listen((data) async {
-      if (data.containsKey("+clicked_branch_link") &&
-          data["+clicked_branch_link"] == true) {
-        await Future.delayed(
-            const Duration(milliseconds: 500));
-        if (data[Params.postId] != null) {
-          int postId = int.parse(data[Params.postId]);
-          PostByIdModel model = await PostService.instance
-              .fetchPostById(postId: postId);
-          if (model.status == true) {
-            Post? post = model.data?.post;
-            if (post != null) {
-              if (post.postType == PostType.reel) {
-                await Get.to(
-                    () => ReelsScreen(
-                        reels: [post].obs, position: 0),
-                    preventDuplicates: false);
-              } else if ([
-                PostType.image,
-                PostType.video,
-                PostType.text
-              ].contains(post.postType)) {
-                await Get.to(() => SinglePostScreen(
-                    post: post, isFromNotification: true));
+    streamSubscription = FlutterBranchSdk.listSession().listen(
+      (data) async {
+        if (data.containsKey("+clicked_branch_link") &&
+            data["+clicked_branch_link"] == true) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (data[Params.postId] != null) {
+            int postId = int.parse(data[Params.postId]);
+            PostByIdModel model = await PostService.instance.fetchPostById(
+              postId: postId,
+            );
+            if (model.status == true) {
+              Post? post = model.data?.post;
+              if (post != null) {
+                if (post.postType == PostType.reel) {
+                  await Get.to(
+                    () => ReelsScreen(reels: [post].obs, position: 0),
+                    preventDuplicates: false,
+                  );
+                } else if ([
+                  PostType.image,
+                  PostType.video,
+                  PostType.text,
+                ].contains(post.postType)) {
+                  await Get.to(
+                    () =>
+                        SinglePostScreen(post: post, isFromNotification: true),
+                  );
+                }
               }
             }
-          }
-        } else if (data[Params.userId] != null) {
-          int userId = int.parse(data[Params.userId]);
-          User? user = await UserService.instance
-              .fetchUserDetails(userId: userId);
-          if (user != null) {
-            await NavigationService.shared
-                .openProfileScreen(user);
+          } else if (data[Params.userId] != null) {
+            int userId = int.parse(data[Params.userId]);
+            User? user = await UserService.instance.fetchUserDetails(
+              userId: userId,
+            );
+            if (user != null) {
+              await NavigationService.shared.openProfileScreen(user);
+            }
           }
         }
-      }
-    }, onError: (error) {
-      Loggers.error(
-          'listSession error: ${error.toString()}');
-    });
+      },
+      onError: (error) {
+        Loggers.error('listSession error: ${error.toString()}');
+      },
+    );
   }
 
   Future<void> onRefreshPage({bool reset = true}) async {
@@ -217,7 +215,7 @@ class HomeScreenController extends BaseController
     await onRefreshPage(reset: true);
   }
 
-// Below is the Original Live Location Access Code
+  // Below is the Original Live Location Access Code
   // onTabTypeChanged(TabType tabType) async {
   //   onAnimationBack();
   //   if (selectedReelCategory.value == tabType) {
@@ -238,50 +236,56 @@ class HomeScreenController extends BaseController
 
   onAnimationBack() {
     isAnimateTab.value = false;
-    controller.animateBack(0,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.linear);
+    controller.animateBack(
+      0,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.linear,
+    );
   }
 
   Future<void> fetchDiscoverPost(bool resetData) async {
     isLoading.value = true;
-    List<Post> newPosts = await PostService.instance
-        .fetchPostsDiscover(
-            type: PostType.reels, cancelToken: token);
+    List<Post> newPosts = await PostService.instance.fetchPostsDiscover(
+      type: PostType.reels,
+      cancelToken: token,
+    );
     print('FETCH NEW POST : ${newPosts.length}');
     addResponseData(newPosts, resetData);
   }
 
   Future<void> _fetchFollowingPost(bool resetData) async {
     isLoading.value = true;
-    List<Post> newPosts = await PostService.instance
-        .fetchPostsFollowing(
-            type: PostType.reels, cancelToken: token);
+    List<Post> newPosts = await PostService.instance.fetchPostsFollowing(
+      type: PostType.reels,
+      cancelToken: token,
+    );
 
     addResponseData(newPosts, resetData);
   }
 
   Future<void> _fetchPostsNearBy(bool resetData) async {
     isLoading.value = true;
-    Position position = await LocationService.instance
-        .getCurrentLocation(isPermissionDialogShow: true);
-    List<Post> newPosts = await PostService.instance
-        .fetchPostsNearBy(
-            type: PostType.reels,
-            placeLat: position.latitude,
-            placeLon: position.longitude,
-            cancelToken: token);
+    Position position = await LocationService.instance.getCurrentLocation(
+      isPermissionDialogShow: true,
+    );
+    List<Post> newPosts = await PostService.instance.fetchPostsNearBy(
+      type: PostType.reels,
+      placeLat: position.latitude,
+      placeLon: position.longitude,
+      cancelToken: token,
+    );
     addResponseData(newPosts, resetData);
   }
 
-  void addResponseData(
-      List<Post> newPosts, bool resetData) {
+  void addResponseData(List<Post> newPosts, bool resetData) {
     if (resetData) {
       reels.clear();
       if (Get.isRegistered<ReelsScreenController>(
-          tag: ReelsScreenController.tag)) {
+        tag: ReelsScreenController.tag,
+      )) {
         var controller = Get.find<ReelsScreenController>(
-            tag: ReelsScreenController.tag);
+          tag: ReelsScreenController.tag,
+        );
         controller.onRefreshPage(newPosts);
       }
     }
@@ -294,8 +298,7 @@ class HomeScreenController extends BaseController
   Future<void> _fetchLocation() async {
     PlaceDetail? detail;
     try {
-      detail =
-          await CommonService.instance.getIPPlaceDetail();
+      detail = await CommonService.instance.getIPPlaceDetail();
     } catch (e) {
       Loggers.error('Location error : $e');
     }
@@ -303,10 +306,11 @@ class HomeScreenController extends BaseController
     if (detail != null) {
       DateTime time = DateTime.now().toUtc();
       UserService.instance.updateUserDetails(
-          appLastUsed: time.formatTime,
-          region: detail.region,
-          regionName: detail.regionName,
-          timezone: detail.timezone);
+        appLastUsed: time.formatTime,
+        region: detail.region,
+        regionName: detail.regionName,
+        timezone: detail.timezone,
+      );
     }
   }
 }
