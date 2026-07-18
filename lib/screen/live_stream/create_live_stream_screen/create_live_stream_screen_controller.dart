@@ -379,11 +379,11 @@ class CreateLiveStreamScreenController extends BaseController {
             // Set Goal Button
             GestureDetector(
               onTap: () {
-                if (goalTitleController.text.trim().isNotEmpty &&
-                    targetAmountController.text.trim().isNotEmpty) {
-                  liveGoalTitle.value = goalTitleController.text.trim();
-                  liveGoalTargetAmount.value =
-                      int.tryParse(targetAmountController.text.trim()) ?? 0;
+                final title = goalTitleController.text.trim();
+                final target = int.tryParse(targetAmountController.text.trim());
+                if (title.isNotEmpty && target != null && target > 0) {
+                  liveGoalTitle.value = title;
+                  liveGoalTargetAmount.value = target;
                   liveGoalType.value = selectedGoalType.value;
                   hasLiveGoal.value = true;
                   Get.back();
@@ -397,7 +397,7 @@ class CreateLiveStreamScreenController extends BaseController {
                 } else {
                   Get.snackbar(
                     'Error',
-                    'Please fill in all fields',
+                    'Enter a goal title and a target greater than zero.',
                     backgroundColor: Colors.red,
                     colorText: Colors.white,
                   );
