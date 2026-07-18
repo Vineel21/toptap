@@ -32,36 +32,31 @@ class MembersSheet extends StatefulWidget {
 
 class _MembersSheetState extends State<MembersSheet> {
   final controller = Get.find<LivestreamScreenController>();
-  final PageController pageController =
-      PageController(initialPage: 0);
+  final PageController pageController = PageController(initialPage: 0);
   final RxInt selectedTab = 0.obs;
 
   void onSelectedTab(int index) {
     selectedTab.value = index;
     pageController.animateToPage(index,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.linear);
+        duration: const Duration(milliseconds: 250), curve: Curves.linear);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(
-          top: AppBar().preferredSize.height * 2),
+      margin: EdgeInsets.only(top: AppBar().preferredSize.height * 2),
       decoration: ShapeDecoration(
         color: whitePure(context),
         shape: const SmoothRectangleBorder(
           borderRadius: SmoothBorderRadius.vertical(
-              top: SmoothRadius(
-                  cornerRadius: 30, cornerSmoothing: 1)),
+              top: SmoothRadius(cornerRadius: 30, cornerSmoothing: 1)),
         ),
       ),
       child: Obx(() {
         return Column(
           children: [
             BottomSheetTopView(
-                title: LKey.members.tr,
-                sideBtnVisibility: false),
+                title: LKey.members.tr, sideBtnVisibility: false),
             if (widget.isHost)
               CustomTabSwitcher(
                 items: [
@@ -72,69 +67,47 @@ class _MembersSheetState extends State<MembersSheet> {
                 ],
                 onTap: onSelectedTab,
                 selectedIndex: selectedTab,
-                margin: const EdgeInsets.symmetric(
-                    horizontal: 10),
+                margin: const EdgeInsets.symmetric(horizontal: 10),
                 backgroundColor: bgLightGrey(context),
-                selectedFontColor:
-                    themeAccentSolid(context),
+                selectedFontColor: themeAccentSolid(context),
               ),
             Obx(
-              () => (selectedTab.value == 2 ||
-                      selectedTab.value == 3)
+              () => (selectedTab.value == 2 || selectedTab.value == 3)
                   ? const SizedBox()
                   : CustomSearchTextField(
                       backgroundColor: bgLightGrey(context),
                       onChanged: (value) {
                         DebounceAction.shared.call(() {
-                          List<LivestreamUserState>
-                              itemList = [];
-                          itemList = controller
-                              .liveUsersStates
-                              .search(value, (p0) {
-                            AppUser? data = p0.getUser(
-                                controller
-                                    .firestoreController
-                                    .users);
+                          List<LivestreamUserState> itemList = [];
+                          itemList =
+                              controller.liveUsersStates.search(value, (p0) {
+                            AppUser? data = p0
+                                .getUser(controller.firestoreController.users);
                             return data?.username ?? '';
                           }, (p1) {
-                            AppUser? data = p1.getUser(
-                                controller
-                                    .firestoreController
-                                    .users);
+                            AppUser? data = p1
+                                .getUser(controller.firestoreController.users);
                             return data?.fullname ?? '';
                           });
                           if (widget.isHost) {
                             if (selectedTab.value == 0) {
-                              controller.requestList.value =
-                                  itemList
-                                      .where((element) =>
-                                          element.type ==
-                                          LivestreamUserType
-                                              .requested)
-                                      .toList();
-                            } else if (selectedTab.value ==
-                                1) {
-                              controller
-                                      .audienceList.value =
-                                  itemList
-                                      .where((element) =>
-                                          element.type !=
-                                              LivestreamUserType
-                                                  .host &&
-                                          element.type !=
-                                              LivestreamUserType
-                                                  .left)
-                                      .toList();
+                              controller.requestList.value = itemList
+                                  .where((element) =>
+                                      element.type ==
+                                      LivestreamUserType.requested)
+                                  .toList();
+                            } else if (selectedTab.value == 1) {
+                              controller.audienceList.value = itemList
+                                  .where((element) =>
+                                      element.type != LivestreamUserType.host &&
+                                      element.type != LivestreamUserType.left)
+                                  .toList();
                             }
                           } else {
-                            controller.audienceMemberList
-                                    .value =
-                                itemList
-                                    .where((element) =>
-                                        element.type !=
-                                        LivestreamUserType
-                                            .left)
-                                    .toList();
+                            controller.audienceMemberList.value = itemList
+                                .where((element) =>
+                                    element.type != LivestreamUserType.left)
+                                .toList();
                           }
                         }, milliseconds: 500);
                       },
@@ -143,30 +116,23 @@ class _MembersSheetState extends State<MembersSheet> {
             Expanded(
               child: !widget.isHost
                   ? NoDataView(
-                      showShow: controller
-                          .audienceMemberList.isEmpty,
+                      showShow: controller.audienceMemberList.isEmpty,
                       title: LKey.userListEmptyTitle.tr,
-                      description:
-                          LKey.userListEmptyDescription.tr,
+                      description: LKey.userListEmptyDescription.tr,
                       child: ListView.builder(
                         padding: EdgeInsets.zero,
-                        itemCount: controller
-                            .audienceMemberList.length,
+                        itemCount: controller.audienceMemberList.length,
                         itemBuilder: (context, index) {
-                          final state = controller
-                              .audienceMemberList[index];
-                          final user = controller
-                              .firestoreController.users
-                              .firstWhereOrNull((element) =>
-                                  element.userId ==
-                                  state.userId);
-                          final bool isInvited = state
-                                  .type ==
-                              LivestreamUserType.invited;
+                          final state = controller.audienceMemberList[index];
+                          final user = controller.firestoreController.users
+                              .firstWhereOrNull(
+                                  (element) => element.userId == state.userId);
+                          final bool isInvited =
+                              state.type == LivestreamUserType.invited;
                           return MemberProfileCard(
                               user: user,
-                              widget: _buildActionWidget(
-                                  state, user, isInvited));
+                              widget:
+                                  _buildActionWidget(state, user, isInvited));
                         },
                       ),
                     )
@@ -177,131 +143,89 @@ class _MembersSheetState extends State<MembersSheet> {
                       },
                       children: [
                         NoDataView(
-                          showShow: controller
-                              .requestList.isEmpty,
+                          showShow: controller.requestList.isEmpty,
                           title: LKey.requestTitle.tr,
-                          description:
-                              LKey.requestDescription.tr,
+                          description: LKey.requestDescription.tr,
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
-                            itemCount: controller
-                                .requestList.length,
+                            itemCount: controller.requestList.length,
                             itemBuilder: (context, index) {
-                              final state = controller
-                                  .requestList[index];
-                              final user = controller
-                                  .firestoreController.users
-                                  .firstWhereOrNull(
-                                      (element) =>
-                                          element.userId ==
-                                          state.userId);
+                              final state = controller.requestList[index];
+                              final user = controller.firestoreController.users
+                                  .firstWhereOrNull((element) =>
+                                      element.userId == state.userId);
                               final bool isInvited =
-                                  state.type ==
-                                      LivestreamUserType
-                                          .invited;
+                                  state.type == LivestreamUserType.invited;
                               return MemberProfileCard(
                                 user: user,
-                                widget: _buildActionWidget(
-                                    state, user, isInvited),
+                                widget:
+                                    _buildActionWidget(state, user, isInvited),
                               );
                             },
                           ),
                         ),
                         NoDataView(
-                          showShow: controller
-                              .audienceList.isEmpty,
-                          title: LKey
-                              .audienceListEmptyTitle.tr,
-                          description: LKey
-                              .audienceListEmptyDescription
-                              .tr,
+                          showShow: controller.audienceList.isEmpty,
+                          title: LKey.audienceListEmptyTitle.tr,
+                          description: LKey.audienceListEmptyDescription.tr,
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
-                            itemCount: controller
-                                .audienceList.length,
+                            itemCount: controller.audienceList.length,
                             itemBuilder: (context, index) {
-                              final state = controller
-                                  .audienceList[index];
-                              final user = controller
-                                  .firestoreController.users
-                                  .firstWhereOrNull(
-                                      (element) =>
-                                          element.userId ==
-                                          state.userId);
+                              final state = controller.audienceList[index];
+                              final user = controller.firestoreController.users
+                                  .firstWhereOrNull((element) =>
+                                      element.userId == state.userId);
                               final bool isInvited =
-                                  state.type ==
-                                      LivestreamUserType
-                                          .invited;
+                                  state.type == LivestreamUserType.invited;
                               return MemberProfileCard(
                                 user: user,
-                                widget: _buildActionWidget(
-                                    state, user, isInvited),
+                                widget:
+                                    _buildActionWidget(state, user, isInvited),
                               );
                             },
                           ),
                         ),
                         NoDataView(
-                          showShow: controller
-                              .invitedList.isEmpty,
-                          title:
-                              LKey.invitedListEmptyTitle.tr,
-                          description: LKey
-                              .invitedListEmptyDescription
-                              .tr,
+                          showShow: controller.invitedList.isEmpty,
+                          title: LKey.invitedListEmptyTitle.tr,
+                          description: LKey.invitedListEmptyDescription.tr,
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
-                            itemCount: controller
-                                .invitedList.length,
+                            itemCount: controller.invitedList.length,
                             itemBuilder: (context, index) {
-                              final state = controller
-                                  .invitedList[index];
-                              final user = controller
-                                  .firestoreController.users
-                                  .firstWhereOrNull(
-                                      (element) =>
-                                          element.userId ==
-                                          state.userId);
+                              final state = controller.invitedList[index];
+                              final user = controller.firestoreController.users
+                                  .firstWhereOrNull((element) =>
+                                      element.userId == state.userId);
                               final bool isInvited =
-                                  state.type ==
-                                      LivestreamUserType
-                                          .invited;
+                                  state.type == LivestreamUserType.invited;
                               return MemberProfileCard(
                                 user: user,
-                                widget: _buildActionWidget(
-                                    state, user, isInvited),
+                                widget:
+                                    _buildActionWidget(state, user, isInvited),
                               );
                             },
                           ),
                         ),
                         NoDataView(
-                          showShow:
-                              controller.coHostList.isEmpty,
-                          title:
-                              LKey.coHostListEmptyTitle.tr,
-                          description: LKey
-                              .coHostListEmptyDescription
-                              .tr,
+                          showShow: controller.coHostList.isEmpty,
+                          title: LKey.coHostListEmptyTitle.tr,
+                          description: LKey.coHostListEmptyDescription.tr,
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
-                            itemCount: controller
-                                .coHostList.length,
+                            itemCount: controller.coHostList.length,
                             itemBuilder: (context, index) {
-                              final state = controller
-                                  .coHostList[index];
-                              final user = controller
-                                  .firestoreController.users
-                                  .firstWhereOrNull(
-                                      (element) =>
-                                          element.userId ==
-                                          state.userId);
+                              final state = controller.coHostList[index];
+                              final user = controller.firestoreController.users
+                                  .firstWhereOrNull((element) =>
+                                      element.userId == state.userId);
                               final bool isInvited =
-                                  state.type ==
-                                      LivestreamUserType
-                                          .invited;
+                                  state.type == LivestreamUserType.invited;
                               return MemberProfileCard(
                                 user: user,
-                                widget: _buildActionWidget(
-                                    state, user, isInvited),
+                                widget:
+                                    _buildActionWidget(state, user, isInvited),
                               );
                             },
                           ),
@@ -315,22 +239,18 @@ class _MembersSheetState extends State<MembersSheet> {
     );
   }
 
-  Widget _buildActionWidget(LivestreamUserState state,
-      AppUser? user, bool isInvited) {
+  Widget _buildActionWidget(
+      LivestreamUserState state, AppUser? user, bool isInvited) {
     if (!widget.isHost) return const SizedBox();
     switch (state.type) {
       case LivestreamUserType.requested:
         return Row(
           children: [
-            _buildActionBtn(
-                AssetRes.icCheck, ColorRes.green, () {
+            _buildActionBtn(AssetRes.icCheck, ColorRes.green, () async {
               Get.back();
-              controller.updateUserStateToFirestore(
-                  state.userId,
-                  type: LivestreamUserType.coHost);
+              await controller.acceptJoinRequest(user);
             }),
-            _buildActionBtn(
-                AssetRes.icClose1, ColorRes.likeRed, () {
+            _buildActionBtn(AssetRes.icClose1, ColorRes.likeRed, () {
               controller.onRequestRefuse(user,
                   type: LivestreamCommentType.request);
             }),
@@ -338,38 +258,29 @@ class _MembersSheetState extends State<MembersSheet> {
         );
       case LivestreamUserType.audience:
         return TextBorderButton(
-          text:
-              isInvited ? LKey.invited.tr : LKey.invite.tr,
+          text: isInvited ? LKey.invited.tr : LKey.invite.tr,
           textOpacity: isInvited ? .2 : 1,
-          onTap: () => controller.onInvite(user,
-              isInvited: isInvited),
+          onTap: () => controller.onInvite(user, isInvited: isInvited),
         );
       case LivestreamUserType.invited:
         return TextBorderButton(
           text: LKey.cancel.tr,
-          onTap: () => controller.onInvite(user,
-              isInvited: isInvited),
+          onTap: () => controller.onInvite(user, isInvited: isInvited),
         );
       case LivestreamUserType.coHost:
         return Row(
           children: [
             _buildActionBtn(
-              state.isVideoOn
-                  ? AssetRes.icVideoCamera
-                  : AssetRes.icVideoOff,
+              state.isVideoOn ? AssetRes.icVideoCamera : AssetRes.icVideoOff,
               textLightGrey(context),
               () => controller.coHostVideoToggle(state),
             ),
             _buildActionBtn(
-              state.isMuted
-                  ? AssetRes.icMicOff
-                  : AssetRes.icMicrophone,
+              state.isMuted ? AssetRes.icMicOff : AssetRes.icMicrophone,
               textLightGrey(context),
               () => controller.coHostAudioToggle(state),
             ),
-            _buildActionBtn(
-                AssetRes.icDelete1,
-                ColorRes.likeRed,
+            _buildActionBtn(AssetRes.icDelete1, ColorRes.likeRed,
                 () => controller.coHostDelete(state)),
           ],
         );
@@ -378,8 +289,7 @@ class _MembersSheetState extends State<MembersSheet> {
     }
   }
 
-  Widget _buildActionBtn(String asset, Color color,
-      [VoidCallback? onTap]) {
+  Widget _buildActionBtn(String asset, Color color, [VoidCallback? onTap]) {
     return BorderRoundedButton(
       image: asset,
       color: color,
@@ -394,9 +304,7 @@ class MemberProfileCard extends StatelessWidget {
   final AppUser? user;
 
   const MemberProfileCard(
-      {super.key,
-      required this.widget,
-      required this.user});
+      {super.key, required this.widget, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -414,8 +322,7 @@ class MemberProfileCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     FullNameWithBlueTick(
                       username: user?.username,
@@ -424,10 +331,8 @@ class MemberProfileCard extends StatelessWidget {
                       iconSize: 18,
                     ),
                     Text(user?.fullname ?? '',
-                        style:
-                            TextStyleCustom.outFitLight300(
-                                color:
-                                    textLightGrey(context)))
+                        style: TextStyleCustom.outFitLight300(
+                            color: textLightGrey(context)))
                   ],
                 ),
               ),
@@ -475,8 +380,7 @@ class BorderRoundedButton extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: color)),
         alignment: Alignment.center,
-        child: Image.asset(image,
-            color: color, width: 24, height: 24),
+        child: Image.asset(image, color: color, width: 24, height: 24),
       ),
     );
   }
@@ -488,10 +392,7 @@ class TextBorderButton extends StatelessWidget {
   final double? textOpacity;
 
   const TextBorderButton(
-      {super.key,
-      required this.text,
-      this.onTap,
-      this.textOpacity});
+      {super.key, required this.text, this.onTap, this.textOpacity});
 
   @override
   Widget build(BuildContext context) {
@@ -502,8 +403,8 @@ class TextBorderButton extends StatelessWidget {
         width: 100,
         decoration: ShapeDecoration(
             shape: SmoothRectangleBorder(
-                borderRadius: SmoothBorderRadius(
-                    cornerRadius: 8, cornerSmoothing: 1),
+                borderRadius:
+                    SmoothBorderRadius(cornerRadius: 8, cornerSmoothing: 1),
                 side: BorderSide(color: bgGrey(context)))),
         alignment: Alignment.center,
         child: Text(

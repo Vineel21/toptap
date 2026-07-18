@@ -27,57 +27,59 @@ class LiveStreamAudienceScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: blackPure(context),
       resizeToAvoidBottomInset: false,
-      body: PopScope(
-        canPop: false,
-        child: Stack(
-          children: [
-            const LiveStreamBlurBackgroundImage(),
+      body: Obx(
+        () => PopScope(
+          canPop: controller.canPopStreamRoute.value,
+          child: Stack(
+            children: [
+              const LiveStreamBlurBackgroundImage(),
 
-            /// Live StreamView
-            Obx(() {
-              switch (controller.liveData.value.type) {
-                case null:
-                case LivestreamType.livestream:
-                  return LivestreamView(
-                    streamViews: controller.streamViews,
-                    controller: controller,
-                  );
-                case LivestreamType.battle:
-                  return BattleView(
-                    isAudience: true,
-                    controller: controller,
-                    margin: const EdgeInsets.only(top: 100),
-                  );
-                case LivestreamType.dummy:
-                  return LivestreamVideoPlayer(
-                      controller: controller.videoPlayerController);
-              }
-            }),
-
-            KeyboardAvoider(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  LiveStreamAudienceTopView(
-                      isAudience: true, controller: controller),
-                  LiveStreamBottomView(
-                      isAudience: true, controller: controller),
-                ],
-              ),
-            ),
-
-            Obx(
-              () {
-                Livestream stream = controller.liveData.value;
-                bool isBattle = stream.battleType == BattleType.waiting;
-                if (isBattle) {
-                  return BattleStartCountdownOverlay(
-                      isHost: isHost, stream: stream);
+              /// Live StreamView
+              Obx(() {
+                switch (controller.liveData.value.type) {
+                  case null:
+                  case LivestreamType.livestream:
+                    return LivestreamView(
+                      streamViews: controller.streamViews,
+                      controller: controller,
+                    );
+                  case LivestreamType.battle:
+                    return BattleView(
+                      isAudience: true,
+                      controller: controller,
+                      margin: const EdgeInsets.only(top: 100),
+                    );
+                  case LivestreamType.dummy:
+                    return LivestreamVideoPlayer(
+                        controller: controller.videoPlayerController);
                 }
-                return const SizedBox();
-              },
-            )
-          ],
+              }),
+
+              KeyboardAvoider(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    LiveStreamAudienceTopView(
+                        isAudience: true, controller: controller),
+                    LiveStreamBottomView(
+                        isAudience: true, controller: controller),
+                  ],
+                ),
+              ),
+
+              Obx(
+                () {
+                  Livestream stream = controller.liveData.value;
+                  bool isBattle = stream.battleType == BattleType.waiting;
+                  if (isBattle) {
+                    return BattleStartCountdownOverlay(
+                        isHost: isHost, stream: stream);
+                  }
+                  return const SizedBox();
+                },
+              )
+            ],
+          ),
         ),
       ),
     );

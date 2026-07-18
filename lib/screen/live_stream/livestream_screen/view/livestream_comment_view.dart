@@ -8,7 +8,6 @@ import 'package:shortzz/common/widget/full_name_with_blue_tick.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/livestream/livestream.dart';
 import 'package:shortzz/model/livestream/livestream_comment.dart';
-import 'package:shortzz/model/livestream/livestream_user_state.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/livestream_screen_controller.dart';
 import 'package:shortzz/utilities/asset_res.dart';
 import 'package:shortzz/utilities/color_res.dart';
@@ -124,12 +123,11 @@ class LiveStreamCommentView extends StatelessWidget {
                 ),
                 const SizedBox(width: 5),
                 InkWell(
-                  onTap: () {
-                    controller.onRequestRefuse(comment.senderUser,
-                        comment: comment);
-                    controller.updateUserStateToFirestore(
-                        comment.senderId ?? -1,
-                        type: LivestreamUserType.coHost);
+                  onTap: () async {
+                    await controller.acceptJoinRequest(
+                      comment.senderUser,
+                      comment: comment,
+                    );
                   },
                   child: Container(
                     height: 26,

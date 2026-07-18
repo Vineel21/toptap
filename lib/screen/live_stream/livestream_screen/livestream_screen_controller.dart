@@ -29,6 +29,7 @@ import 'package:shortzz/screen/gift_sheet/send_gift_sheet_controller.dart';
 import 'package:shortzz/screen/live_stream/live_stream_end_screen/live_stream_end_screen.dart';
 import 'package:shortzz/screen/live_stream/live_stream_end_screen/widget/livestream_summary.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/audience/widget/live_stream_join_sheet.dart';
+import 'package:shortzz/screen/live_stream/live_stream_search_screen/live_stream_search_screen.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/host/widget/live_stream_host_top_view.dart';
 import 'package:shortzz/screen/report_sheet/report_sheet.dart';
 import 'package:shortzz/utilities/app_res.dart';
@@ -102,6 +103,7 @@ class LivestreamScreenController extends BaseController {
   RxBool isViewVisible = true.obs;
   RxBool isRightControlsVisible = false
       .obs; // Controls visibility of right controls (beauty, share, more, like)
+  RxBool canPopStreamRoute = false.obs;
 
   List<LivestreamUserState> memberList = <LivestreamUserState>[];
 
@@ -532,22 +534,29 @@ class LivestreamScreenController extends BaseController {
       Get.back();
       await Future<void>.delayed(Duration.zero);
     }
-    if (Get.key.currentState?.canPop() ?? false) {
-      Get.back();
-    }
+    await _popAudienceRoute();
+  }
+
+  Future<void> _popAudienceRoute() async {
+    canPopStreamRoute.value = true;
+    await WidgetsBinding.instance.endOfFrame;
+    Get.off(() => const LiveStreamSearchScreen());
   }
 
   Future<void> onRequestRefuse(
     AppUser? user, {
     LivestreamComment? comment,
     LivestreamCommentType? type,
+    bool resetToAudience = true,
   }) async {
     if (user?.userId == null) return;
 
-    await updateUserStateToFirestore(
-      user?.userId,
-      type: LivestreamUserType.audience,
-    );
+    if (resetToAudience) {
+      await updateUserStateToFirestore(
+        user?.userId,
+        type: LivestreamUserType.audience,
+      );
+    }
     LivestreamComment? liveComment;
     if (comment == null) {
       liveComment = comments.firstWhereOrNull(
@@ -561,6 +570,24 @@ class LivestreamScreenController extends BaseController {
     if (liveComment?.id != null) {
       await liveStreamCommentsRef.doc(liveComment!.id.toString()).delete();
     }
+  }
+
+  Future<void> acceptJoinRequest(
+    AppUser? user, {
+    LivestreamComment? comment,
+  }) async {
+    if (user?.userId == null) return;
+
+    await onRequestRefuse(
+      user,
+      comment: comment,
+      type: LivestreamCommentType.request,
+      resetToAudience: false,
+    );
+    await updateUserStateToFirestore(
+      user!.userId,
+      type: LivestreamUserType.coHost,
+    );
   }
 
   Future<void> deleteStreamOnFirebase() async {
@@ -1574,7 +1601,8 @@ class LivestreamScreenController extends BaseController {
           if (liveData.value.coHostIds?.contains(myUserId) ?? false) {
             closeCoHostStream(myUserId);
           }
-          logoutRoom();
+          await logoutRoom();
+          await _popAudienceRoute();
         },
       ),
     );
