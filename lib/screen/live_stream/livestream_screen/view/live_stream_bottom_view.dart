@@ -253,6 +253,15 @@ class LiveStreamBottomView extends StatelessWidget {
             ),
             if (state?.type == LivestreamUserType.host)
               IconButton(
+                tooltip: 'About Me',
+                icon: const Icon(
+                  Icons.person_outline,
+                  color: Colors.white,
+                ),
+                onPressed: controller.showAboutMeDialog,
+              ),
+            if (state?.type == LivestreamUserType.host)
+              IconButton(
                 tooltip: stream.commentsEnabled
                     ? 'Turn comments off'
                     : 'Turn comments on',

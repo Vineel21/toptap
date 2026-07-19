@@ -16,6 +16,7 @@ import 'package:shortzz/common/manager/haptic_manager.dart';
 import 'package:shortzz/common/manager/logger.dart';
 import 'package:shortzz/common/manager/session_manager.dart';
 import 'package:shortzz/common/service/api/notification_service.dart';
+import 'package:shortzz/common/service/api/user_service.dart';
 import 'package:shortzz/common/widget/confirmation_dialog.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/general/settings_model.dart';
@@ -1620,6 +1621,52 @@ class LivestreamScreenController extends BaseController {
       ),
     );
     titleController.dispose();
+  }
+
+  Future<void> showAboutMeDialog() async {
+    if (!isHost) return;
+
+    final bioController = TextEditingController(
+      text: SessionManager.instance.getUser()?.bio ?? '',
+    );
+
+    final updatedBio = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('About Me'),
+        content: TextField(
+          controller: bioController,
+          autofocus: true,
+          maxLength: 150,
+          minLines: 3,
+          maxLines: 5,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            hintText: 'Tell viewers about yourself',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Get.back(result: bioController.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    bioController.dispose();
+
+    if (updatedBio == null) return;
+
+    final updatedUser = await UserService.instance.updateUserDetails(
+      bio: updatedBio,
+    );
+
+    if (updatedUser == null) {
+      showSnackBar('Unable to update About Me.');
+      return;
+    }
+
+    showSnackBar('About Me updated.');
   }
 
   Future<void> toggleCommentsEnabled() async {
