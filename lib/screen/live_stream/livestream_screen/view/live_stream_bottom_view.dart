@@ -78,8 +78,20 @@ class LiveStreamBottomView extends StatelessWidget {
                   ),
                   child: _buildBottomControlsRow(context),
                 ),
-                // Host Controls (if user is host/co-host)
-                _buildHostControls(),
+                // Host Controls (if user is host/co-host). These must follow
+                // the same visibility state as the rest of the LIVE chrome;
+                // otherwise invisible camera/mic buttons can still be tapped.
+                Obx(() {
+                  final isVisible = controller.isViewVisible.value;
+                  return IgnorePointer(
+                    ignoring: !isVisible,
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: isVisible ? 1 : 0,
+                      child: _buildHostControls(),
+                    ),
+                  );
+                }),
                 // Exit Message Bar
                 Obx(() {
                   Livestream stream = controller.liveData.value;
@@ -110,42 +122,21 @@ class LiveStreamBottomView extends StatelessWidget {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildHostButton(context),
+          if (isVisible) _buildHostButton(context),
           Expanded(
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: isVisible ? 1 : 0,
+              alwaysIncludeSemantics: false,
               child: Row(
                 children: [
-                  if (stream.type != LivestreamType.battle)
-                    GestureDetector(
-                      onTap: controller.toggleView,
-                      child: AnimatedRotation(
-                        duration: const Duration(milliseconds: 200),
-                        turns: isVisible ? 0 : 0.5,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (stream.type != LivestreamType.battle)
-                    const SizedBox(width: 8),
                   Expanded(
-                    child: LiveStreamTextFieldView(
-                      isAudience: isAudience,
-                      controller: controller,
+                    child: IgnorePointer(
+                      ignoring: !isVisible,
+                      child: LiveStreamTextFieldView(
+                        isAudience: isAudience,
+                        controller: controller,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -160,30 +151,53 @@ class LiveStreamBottomView extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // Right: Fixed Up Arrow Toggle Button
-          GestureDetector(
-            onTap: () {
-              controller.isRightControlsVisible.value =
-                  !controller.isRightControlsVisible.value;
-            },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
-              ),
-              child: AnimatedRotation(
-                duration: const Duration(milliseconds: 200),
-                turns: controller.isRightControlsVisible.value ? 0.5 : 0,
-                child: const Icon(
-                  Icons.keyboard_arrow_up,
-                  color: Colors.white,
-                  size: 16,
+          if (stream.type != LivestreamType.battle)
+            GestureDetector(
+              onTap: controller.toggleView,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: AnimatedRotation(
+                  duration: const Duration(milliseconds: 200),
+                  turns: isVisible ? 0 : 0.5,
+                  child: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                 ),
               ),
             ),
-          ),
+          if (stream.type != LivestreamType.battle) const SizedBox(width: 8),
+          // Right: Fixed Up Arrow Toggle Button
+          if (isVisible)
+            GestureDetector(
+              onTap: () {
+                controller.isRightControlsVisible.value =
+                    !controller.isRightControlsVisible.value;
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: AnimatedRotation(
+                  duration: const Duration(milliseconds: 200),
+                  turns: controller.isRightControlsVisible.value ? 0.5 : 0,
+                  child: const Icon(
+                    Icons.keyboard_arrow_up,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
         ],
       );
     });
@@ -512,5 +526,4 @@ class LiveStreamBottomView extends StatelessWidget {
       ),
     );
   }
-
 }

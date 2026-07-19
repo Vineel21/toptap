@@ -12,51 +12,40 @@ class LocationService {
 
   static final instance = LocationService._();
 
-  Future<Position> getCurrentLocation({bool isPermissionDialogShow = false,
-    Function(bool enable)? returnCallback}) async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  Future<Position> getCurrentLocation({
+    bool isPermissionDialogShow = false,
+    Function(bool enable)? returnCallback,
+  }) async {
+    var serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled && isPermissionDialogShow) {
+      await showServiceDialog();
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    }
     if (!serviceEnabled) {
-      if (isPermissionDialogShow) {
-        Future.error('Location services are still disabled.');
-        await showServiceDialog(serviceEnableCallback: returnCallback);
-      } else {
-        return Future.error('Location services are still disabled.');
-      }
+      returnCallback?.call(false);
+      throw Exception('Location services are disabled.');
     }
 
-    permission = await Geolocator.checkPermission();
-
-    switch (permission) {
-      case LocationPermission.denied:
-        if (isPermissionDialogShow) {
-          await showPermissionDialog(serviceEnableCallback: returnCallback);
-          Future.error('Location permissions are denied');
-        }
-        return Future.error('Location permissions are denied');
-      case LocationPermission.deniedForever:
-        showPermissionDialog();
-
-        returnCallback?.call(false);
-        return Future.error('Location permissions are deniedForever');
-      case LocationPermission.whileInUse:
-      case LocationPermission.always:
-      case LocationPermission.unableToDetermine:
-        returnCallback?.call(true);
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
     }
 
     if (permission == LocationPermission.deniedForever) {
       returnCallback?.call(false);
       if (isPermissionDialogShow) {
-        Future.error(
-            'Location permissions are permanently denied, we cannot request permissions.');
-      } else {
-        return Future.error(
-            'Location permissions are permanently denied, we cannot request permissions.');
+        await showPermissionDialog();
       }
+      throw Exception('Location permission is permanently denied.');
     }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.unableToDetermine) {
+      returnCallback?.call(false);
+      throw Exception('Location permission was not granted.');
+    }
+
+    returnCallback?.call(true);
     const double locationPrecision = 0.0001; // ~11 meters
 
     Position position = await Geolocator.getCurrentPosition();
@@ -79,32 +68,19 @@ class LocationService {
     return position;
   }
 
-  showPermissionDialog({Function(bool enable)? serviceEnableCallback}) async {
-    await Geolocator.requestPermission();
-    Get.bottomSheet(ConfirmationSheet(
+  Future<void> showPermissionDialog() async {
+    await Get.bottomSheet<void>(ConfirmationSheet(
       title: LKey.nearbyReelsPermissionTitle.tr,
       description: LKey.nearbyReelsPermissionDescription.tr,
-      onTap: () {
-        openAppSettings().then(
-          (value) {
-            serviceEnableCallback?.call(value);
-          },
-        );
-      },
+      onTap: openAppSettings,
     ));
   }
 
-  Future<bool> showServiceDialog(
-      {Function(bool enable)? serviceEnableCallback}) async {
-    bool isServiceEnabled = false;
-    await Get.bottomSheet(ConfirmationSheet(
+  Future<void> showServiceDialog() async {
+    await Get.bottomSheet<void>(ConfirmationSheet(
       title: LKey.locationServicesDisabledTitle.tr,
       description: LKey.locationServicesDisabledDescription.tr,
-      onTap: () async {
-        bool value = await Geolocator.openLocationSettings();
-        isServiceEnabled = value;
-      },
+      onTap: Geolocator.openLocationSettings,
     ));
-    return isServiceEnabled;
   }
 }

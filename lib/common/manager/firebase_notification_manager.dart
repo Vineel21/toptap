@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -14,6 +16,7 @@ import 'package:shortzz/common/manager/session_manager.dart'
 import 'package:shortzz/common/service/api/notification_service.dart';
 import 'package:shortzz/common/service/api/post_service.dart';
 import 'package:shortzz/common/service/api/user_service.dart';
+import 'package:shortzz/common/service/call_signaling_service.dart';
 import 'package:shortzz/common/service/navigation/navigate_with_controller.dart';
 import 'package:shortzz/languages/dynamic_translations.dart';
 import 'package:shortzz/languages/languages_keys.dart';
@@ -23,6 +26,7 @@ import 'package:shortzz/model/post_story/post_model.dart';
 import 'package:shortzz/screen/chat_screen/chat_screen.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/screen/chat_screen/chat_screen_controller.dart';
+import 'package:shortzz/screen/call_screen/call_screen.dart';
 import 'package:shortzz/screen/dashboard_screen/dashboard_screen_controller.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/audience/live_stream_audience_screen.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/host/livestream_host_screen.dart';
@@ -32,6 +36,7 @@ import 'package:shortzz/utilities/const_res.dart';
 import 'package:shortzz/utilities/firebase_const.dart';
 
 const String _pendingNotificationPayloadKey = 'pending_notification_payload';
+const String _pendingNotificationActionKey = 'pending_notification_action';
 
 @pragma('vm:entry-point')
 Future<void> notificationTapBackground(
@@ -42,14 +47,49 @@ Future<void> notificationTapBackground(
   if (payload == null || payload.isEmpty) return;
 
   final actionId = notificationResponse.actionId ?? '';
-  if (actionId.startsWith('DECLINE_CALL')) {
-    return;
+  if (actionId.startsWith('DECLINE_CALL') ||
+      actionId.startsWith('ACCEPT_CALL')) {
+    try {
+      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+      final decoded = jsonDecode(payload) as Map<String, dynamic>;
+      var callData = decoded;
+      String? fallbackId;
+      if (decoded['notification_data'] != null || decoded['data'] != null) {
+        final message = RemoteMessage.fromMap(decoded);
+        fallbackId = message.messageId;
+        final rawData = message.data['notification_data'] as String?;
+        if (rawData != null && rawData.isNotEmpty) {
+          callData = jsonDecode(rawData) as Map<String, dynamic>;
+        }
+      }
+      final callId = callData['callId']?.toString() ??
+          callData['channelId']?.toString() ??
+          fallbackId;
+      if (callId != null && callId.isNotEmpty) {
+        final accepted = actionId.startsWith('ACCEPT_CALL');
+        await FirebaseFirestore.instance
+            .collection('call_sessions')
+            .doc(callId)
+            .set({
+          'call_id': callId,
+          'status': accepted
+              ? CallSignalStatus.accepted.name
+              : CallSignalStatus.declined.name,
+          if (!accepted) 'reason': 'notification_declined',
+          'updated_at': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      Loggers.error('Background call action signalling failed: $e');
+    }
+    if (actionId.startsWith('DECLINE_CALL')) return;
   }
 
   // Background notification callbacks run in a separate isolate. Persist the
   // payload and let the main isolate navigate after Flutter has launched.
   final preferences = await SharedPreferences.getInstance();
   await preferences.setString(_pendingNotificationPayloadKey, payload);
+  await preferences.setString(_pendingNotificationActionKey, actionId);
 }
 
 @pragma('vm:entry-point')
@@ -249,8 +289,15 @@ class FirebaseNotificationManager {
       _pendingNotificationPayloadKey,
     );
     if (pendingPayload != null && pendingPayload.isNotEmpty) {
-      notificationPayload.value = pendingPayload;
+      final pendingAction =
+          preferences.getString(_pendingNotificationActionKey);
       await preferences.remove(_pendingNotificationPayloadKey);
+      await preferences.remove(_pendingNotificationActionKey);
+      if (pendingAction?.startsWith('ACCEPT_CALL') == true) {
+        unawaited(_handlePendingAccept(pendingPayload));
+      } else {
+        notificationPayload.value = pendingPayload;
+      }
     } else {
       final launchDetails = await flutterLocalNotificationsPlugin
           .getNotificationAppLaunchDetails();
@@ -289,6 +336,11 @@ class FirebaseNotificationManager {
         return; // Don't show regular notification for calls
       }
 
+      if (!_shouldShowNotification(message)) {
+        Loggers.info('Notification hidden by the user preference');
+        return;
+      }
+
       if (message.data['type'] == NotificationType.chat.type) {
         Loggers.info('💬 Chat notification received');
         ChatThread conversationUser = ChatThread.fromJson(jsonDecode(data));
@@ -320,6 +372,33 @@ class FirebaseNotificationManager {
         ?.createNotificationChannel(channel);
   }
 
+  Future<void> _handlePendingAccept(String payload) async {
+    try {
+      final decoded = jsonDecode(payload) as Map<String, dynamic>;
+      if (decoded['callId'] != null && decoded['caller'] is Map) {
+        final callData = IncomingCallData.fromJson(decoded);
+        await CallSignalingService.instance.updateStatus(
+          callData.callId,
+          CallSignalStatus.accepted,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 700));
+        await Get.to(
+          () => CallScreen(
+            user: callData.caller,
+            isVideoCall: callData.isVideoCall,
+            channelId: callData.channelId,
+            callId: callData.callId,
+            token: callData.token,
+          ),
+        );
+        return;
+      }
+      await _handleCallAction(payload, accept: true);
+    } catch (e) {
+      Loggers.error('Pending call accept failed: $e');
+    }
+  }
+
   void unsubscribeToTopic({String? topic}) async {
     Loggers.success(
       '🔔 Topic UnSubscribe : ${topic ?? notificationTopic}_${Platform.isAndroid ? 'android' : 'ios'}',
@@ -344,20 +423,40 @@ class FirebaseNotificationManager {
           100000,
         );
 
+    final storage = SessionManager.instance.storage;
+    final soundEnabled = storage.read('sound_enabled') ?? true;
+    final vibrationEnabled = storage.read('vibration_enabled') ?? true;
+
     flutterLocalNotificationsPlugin.show(
       notificationId,
       (message.data['title']) ?? message.notification?.title,
       (message.data['body'] as String?) ?? message.notification?.body,
       NotificationDetails(
-        iOS: const DarwinNotificationDetails(
-          presentSound: true,
+        iOS: DarwinNotificationDetails(
+          presentSound: soundEnabled,
           presentAlert: true,
           presentBadge: false,
         ),
-        android: AndroidNotificationDetails(channel.id, channel.name),
+        android: AndroidNotificationDetails(
+          channel.id,
+          channel.name,
+          playSound: soundEnabled,
+          enableVibration: vibrationEnabled,
+        ),
       ),
       payload: jsonEncode(message.toMap()),
     );
+  }
+
+  bool _shouldShowNotification(RemoteMessage message) {
+    final storage = SessionManager.instance.storage;
+    if (storage.read('push_notifications') == false) return false;
+
+    return switch (message.data['type']) {
+      'chat' => storage.read('messages_notifications') ?? true,
+      'live_stream' => storage.read('live_notifications') ?? true,
+      _ => true,
+    };
   }
 
   void showIncomingCallNotification(RemoteMessage message) {
@@ -439,13 +538,29 @@ class FirebaseNotificationManager {
     final dataString = message.data['notification_data'] as String?;
     if (dataString == null || dataString.isEmpty) return;
 
+    final callData = jsonDecode(dataString) as Map<String, dynamic>;
+    final callId = callData['callId']?.toString() ??
+        callData['channelId']?.toString() ??
+        message.messageId;
+
     if (!accept) {
-      // Optional: call API to mark call as declined
-      print('📞 Call declined from notification');
+      if (callId != null && callId.isNotEmpty) {
+        await CallSignalingService.instance.updateStatus(
+          callId,
+          CallSignalStatus.declined,
+          reason: 'notification_declined',
+        );
+      }
       return;
     }
 
-    print('📞 Call accepted from notification');
+    if (callId != null && callId.isNotEmpty) {
+      await CallSignalingService.instance.updateStatus(
+        callId,
+        CallSignalStatus.accepted,
+      );
+    }
+
     await _handleIncomingCallNotification(
       dataString,
       callId: message.messageId,

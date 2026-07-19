@@ -41,4 +41,7 @@ class FirebaseConst {
   static const String joinStreamTime = 'join_stream_time';
   static const String likeCount = 'like_count';
   static const String commentsEnabled = 'comments_enabled';
+  static const String lastHeartbeatAt = 'last_heartbeat_at';
+  static const String lastSeenAt = 'last_seen_at';
+  static const String countedAsViewer = 'counted_as_viewer';
 }

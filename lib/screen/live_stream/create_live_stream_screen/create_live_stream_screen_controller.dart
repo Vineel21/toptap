@@ -532,7 +532,9 @@ class CreateLiveStreamScreenController extends BaseController {
 
       WriteBatch batch = db.batch();
 
-      batch.set(livestreamRef, livestream.toJson());
+      final livestreamData = livestream.toJson();
+      livestreamData[FirebaseConst.lastHeartbeatAt] = time;
+      batch.set(livestreamRef, livestreamData);
       batch.set(usersRef, livestreamUser.toJson());
       batch.set(userStateRef, livestreamUserState.toJson());
 

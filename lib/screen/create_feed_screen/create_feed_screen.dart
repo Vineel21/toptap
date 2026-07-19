@@ -28,8 +28,7 @@ enum CreateFeedType { feed, reel }
 class CreateFeedScreen extends StatelessWidget {
   final CreateFeedType createType;
   final PostStoryContent? content;
-  final Function({Post? post, CreateFeedType? type})?
-      onAddPost;
+  final Function({Post? post, CreateFeedType? type})? onAddPost;
   // CRITICAL FIX: Add optional video editing data
   final dynamic videoEditingController;
 
@@ -43,20 +42,20 @@ class CreateFeedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(CreateFeedScreenController(
-        onAddPost,
-        createType,
-        content.obs,
-        videoEditingController));
+        onAddPost, createType, content.obs, videoEditingController));
 
     return Scaffold(
       body: Column(
         children: [
-          CustomAppBar(title: LKey.createFeed.tr),
+          CustomAppBar(
+            title: createType == CreateFeedType.reel
+                ? 'Create Reel'
+                : LKey.createFeed.tr,
+          ),
           Expanded(
             child: GestureDetector(
-              onTap: () => controller
-                  .commentHelper.detectableTextFocusNode
-                  .unfocus(),
+              onTap: () =>
+                  controller.commentHelper.detectableTextFocusNode.unfocus(),
               child: Stack(
                 children: [
                   SingleChildScrollView(
@@ -64,23 +63,18 @@ class CreateFeedScreen extends StatelessWidget {
                       children: [
                         // 1. Image/Video at the top (smaller size)
                         Obx(
-                          () => switch (controller
-                              .feedPostType.value) {
-                            FeedPostType.text =>
-                              const SizedBox(),
-                            FeedPostType.image =>
-                              FeedImageView(
-                                  files: controller.images,
-                                  controller: controller),
+                          () => switch (controller.feedPostType.value) {
+                            FeedPostType.text => const SizedBox(),
+                            FeedPostType.image => FeedImageView(
+                                files: controller.images,
+                                controller: controller),
                             FeedPostType.video =>
-                              FeedVideoView(
-                                  controller: controller),
+                              FeedVideoView(controller: controller),
                           },
                         ),
 
                         // 2. Media selection for feed (if no media selected)
-                        if (createType ==
-                            CreateFeedType.feed)
+                        if (createType == CreateFeedType.feed)
                           mediaSelectionView(controller),
 
                         const SizedBox(height: 8),
@@ -89,16 +83,13 @@ class CreateFeedScreen extends StatelessWidget {
                         const FeedTextFieldView(),
 
                         // 4. Location bar
-                        CreateFeedLocationBar(
-                            controller: controller),
+                        CreateFeedLocationBar(controller: controller),
 
                         // 5. URL metadata if detected
-                        UrlMetaDataCard(
-                            controller: controller),
+                        UrlMetaDataCard(controller: controller),
 
                         // 6. Reel preview card (for reels only)
-                        ReelPreviewCard(
-                            controller: controller),
+                        ReelPreviewCard(controller: controller),
 
                         // 7. Allow comments toggle
                         const FeedCommentToggle(),
@@ -110,12 +101,10 @@ class CreateFeedScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Obx(() => mentionOrHashtagView(
-                      controller, context)),
+                  Obx(() => mentionOrHashtagView(controller, context)),
 
                   // Floating video preview (when keyboard is open and video exists)
-                  Obx(() => _buildFloatingVideoPreview(
-                      controller, context)),
+                  Obx(() => _buildFloatingVideoPreview(controller, context)),
                 ],
               ),
             ),
@@ -125,75 +114,60 @@ class CreateFeedScreen extends StatelessWidget {
     );
   }
 
-  Widget mediaSelectionView(
-      CreateFeedScreenController controller) {
-    return Obx(() => controller.images.isNotEmpty ||
-            controller.video.value != null
-        ? const SizedBox()
-        : Row(
-            children: [
-              BuildImageContainer(
-                  image: AssetRes.icImage,
-                  onTap: () => controller
-                      .onMediaTap(FeedPostType.image)),
-              const SizedBox(width: 5),
-              BuildImageContainer(
-                  image: AssetRes.icVideo,
-                  onTap: () => controller
-                      .onMediaTap(FeedPostType.video)),
-            ],
-          ));
+  Widget mediaSelectionView(CreateFeedScreenController controller) {
+    return Obx(
+        () => controller.images.isNotEmpty || controller.video.value != null
+            ? const SizedBox()
+            : Row(
+                children: [
+                  BuildImageContainer(
+                      image: AssetRes.icImage,
+                      onTap: () => controller.onMediaTap(FeedPostType.image)),
+                  const SizedBox(width: 5),
+                  BuildImageContainer(
+                      image: AssetRes.icVideo,
+                      onTap: () => controller.onMediaTap(FeedPostType.video)),
+                ],
+              ));
   }
 
   Widget _uploadButton(
-      CreateFeedScreenController controller,
-      BuildContext context) {
+      CreateFeedScreenController controller, BuildContext context) {
     return Obx(() {
-      final isUploading =
-          controller.isUploadingPost.value;
-      final uploadProgress =
-          controller.progress.value.toInt();
+      final isUploading = controller.isUploadingPost.value;
+      final uploadProgress = controller.progress.value.toInt();
       RxBool isEmpty = (createType == CreateFeedType.feed &&
-              controller.commentHelper.isDetectableTextEmpty
-                  .value &&
-              controller.feedPostType.value ==
-                  FeedPostType.text)
+              controller.commentHelper.isDetectableTextEmpty.value &&
+              controller.feedPostType.value == FeedPostType.text)
           .obs;
-      final buttonDisabled =
-          isEmpty.value || isUploading;
-      final buttonTitle = isUploading
-          ? 'Uploading $uploadProgress%'
-          : LKey.uploadNow.tr;
+      final buttonDisabled = isEmpty.value || isUploading;
+      final buttonTitle =
+          isUploading ? 'Uploading $uploadProgress%' : LKey.uploadNow.tr;
 
       return TextButtonCustom(
-        onTap: buttonDisabled
-            ? () {}
-            : controller.handleUpload,
+        onTap: buttonDisabled ? () {} : controller.handleUpload,
         title: buttonTitle,
-        backgroundColor: textDarkGrey(context)
-            .withValues(alpha: buttonDisabled ? .5 : 1),
-        titleColor: whitePure(context)
-            .withValues(alpha: buttonDisabled ? .5 : 1),
+        backgroundColor:
+            textDarkGrey(context).withValues(alpha: buttonDisabled ? .5 : 1),
+        titleColor:
+            whitePure(context).withValues(alpha: buttonDisabled ? .5 : 1),
         borderSide: BorderSide(
-            color: whitePure(context)
-                .withValues(alpha: buttonDisabled ? .5 : 1),
+            color:
+                whitePure(context).withValues(alpha: buttonDisabled ? .5 : 1),
             width: 1),
         margin: EdgeInsets.symmetric(
-            vertical: AppBar().preferredSize.height,
-            horizontal: 20),
+            vertical: AppBar().preferredSize.height, horizontal: 20),
       );
     });
   }
 
   Widget mentionOrHashtagView(
-      CreateFeedScreenController controller,
-      BuildContext context) {
+      CreateFeedScreenController controller, BuildContext context) {
     if (!controller.commentHelper.isMentionUserView.value &&
         !controller.commentHelper.isHashTagView.value) {
       return const SizedBox();
     }
-    final bool isMentionView =
-        controller.commentHelper.isMentionUserView.value;
+    final bool isMentionView = controller.commentHelper.isMentionUserView.value;
     final items = isMentionView
         ? controller.commentHelper.searchUsers
         : controller.commentHelper.hashTags;
@@ -204,8 +178,7 @@ class CreateFeedScreen extends StatelessWidget {
         User user = item as User;
         return UserCard(
           onTap: () => controller.commentHelper
-              .appendDetection(user, DetectType.atSign,
-                  type: 1),
+              .appendDetection(user, DetectType.atSign, type: 1),
           fullName: user.fullname,
           profilePhoto: user.profilePhoto,
           userName: user.username,
@@ -213,19 +186,16 @@ class CreateFeedScreen extends StatelessWidget {
       }
       Hashtag hashtag = item as Hashtag;
       return SearchResultTile(
-        description:
-            '${hashtag.postCount} ${LKey.posts.tr}',
+        description: '${hashtag.postCount} ${LKey.posts.tr}',
         title: '${AppRes.hash}${hashtag.hashtag ?? ' '}',
         onTap: () => controller.commentHelper
-            .appendDetection(hashtag, DetectType.hashTag,
-                type: 1),
+            .appendDetection(hashtag, DetectType.hashTag, type: 1),
         image: AssetRes.icHashtag,
       );
     }
 
     return Container(
-      color: (!controller.commentHelper.isLoading.value &&
-              items.isEmpty)
+      color: (!controller.commentHelper.isLoading.value && items.isEmpty)
           ? null
           : bgLightGrey(context),
       height: double.infinity,
@@ -237,22 +207,18 @@ class CreateFeedScreen extends StatelessWidget {
               ? const SizedBox()
               : ListView.builder(
                   itemCount: items.length,
-                  padding: const EdgeInsets.only(
-                      top: 5, left: 13, right: 13),
+                  padding: const EdgeInsets.only(top: 5, left: 13, right: 13),
                   itemBuilder: itemBuilder),
     );
   }
 
   /// Build floating video preview that appears when keyboard is open
   Widget _buildFloatingVideoPreview(
-      CreateFeedScreenController controller,
-      BuildContext context) {
+      CreateFeedScreenController controller, BuildContext context) {
     // Only show if we have a video and text field is focused
-    if (controller.feedPostType.value !=
-            FeedPostType.video ||
+    if (controller.feedPostType.value != FeedPostType.video ||
         controller.video.value == null ||
-        !controller.commentHelper.detectableTextFocusNode
-            .hasFocus) {
+        !controller.commentHelper.detectableTextFocusNode.hasFocus) {
       return const SizedBox.shrink();
     }
 
@@ -263,17 +229,14 @@ class CreateFeedScreen extends StatelessWidget {
     }
     // Define a fixed width and calculate the height based on the video's aspect ratio
     final double previewWidth = 120;
-    final double videoAspectRatio =
-        playerController.value.aspectRatio;
+    final double videoAspectRatio = playerController.value.aspectRatio;
 
     // The height should be calculated to maintain the original aspect ratio
     // height = width / aspectRatio
-    final double previewHeight =
-        previewWidth / videoAspectRatio;
+    final double previewHeight = previewWidth / videoAspectRatio;
 
     return Positioned(
-      top: MediaQuery.of(context).padding.top +
-          60, // Below app bar
+      top: MediaQuery.of(context).padding.top + 60, // Below app bar
       right: 16,
       child: Container(
         width: previewWidth,
@@ -295,18 +258,15 @@ class CreateFeedScreen extends StatelessWidget {
               // Video player
               Positioned.fill(
                 child: ColorFiltered(
-                  colorFilter: ColorFilter.matrix(
-                      controller.video.value!.colorFilter),
+                  colorFilter:
+                      ColorFilter.matrix(controller.video.value!.colorFilter),
                   child: SizedBox.expand(
                     child: FittedBox(
                       fit: BoxFit.contain,
                       child: SizedBox(
-                        width: playerController
-                            .value.size.width,
-                        height: playerController
-                            .value.size.height,
-                        child:
-                            VideoPlayer(playerController),
+                        width: playerController.value.size.width,
+                        height: playerController.value.size.height,
+                        child: VideoPlayer(playerController),
                       ),
                     ),
                   ),
@@ -330,14 +290,11 @@ class CreateFeedScreen extends StatelessWidget {
                           width: 60,
                           height: 60,
                           decoration: BoxDecoration(
-                            color: Colors.black
-                                .withOpacity(0.6),
+                            color: Colors.black.withOpacity(0.6),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            value.isPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
+                            value.isPlaying ? Icons.pause : Icons.play_arrow,
                             color: Colors.white,
                             size: 20,
                           ),
@@ -354,9 +311,7 @@ class CreateFeedScreen extends StatelessWidget {
                 right: 4,
                 child: GestureDetector(
                   onTap: () {
-                    controller.commentHelper
-                        .detectableTextFocusNode
-                        .unfocus();
+                    controller.commentHelper.detectableTextFocusNode.unfocus();
                   },
                   child: Container(
                     width: 24,
@@ -386,9 +341,7 @@ class BuildImageContainer extends StatelessWidget {
   final VoidCallback onTap;
 
   const BuildImageContainer(
-      {super.key,
-      required this.image,
-      required this.onTap});
+      {super.key, required this.image, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -397,13 +350,10 @@ class BuildImageContainer extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: 59,
-          decoration:
-              BoxDecoration(color: bgLightGrey(context)),
+          decoration: BoxDecoration(color: bgLightGrey(context)),
           child: Center(
             child: Image.asset(image,
-                color: textDarkGrey(context),
-                height: 29,
-                width: 29),
+                color: textDarkGrey(context), height: 29, width: 29),
           ),
         ),
       ),

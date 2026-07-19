@@ -18,6 +18,7 @@ class Livestream {
   AppUser? hostUser;
   List<AppUser>? coHostUsers;
   int? createdAt;
+  int? lastHeartbeatAt;
   int? battleCreatedAt;
   int? isDummyLive;
   String? dummyUserLink;
@@ -42,6 +43,7 @@ class Livestream {
     this.hostId,
     this.coHostIds,
     this.createdAt,
+    this.lastHeartbeatAt,
     this.battleCreatedAt,
     this.isDummyLive,
     this.dummyUserLink,
@@ -67,6 +69,7 @@ class Livestream {
     coHostIds =
         json['co-host_ids'] != null ? json['co-host_ids'].cast<int>() : [];
     createdAt = json['created_at'];
+    lastHeartbeatAt = json['last_heartbeat_at'];
     battleCreatedAt = json['battle_created_at'];
     isDummyLive = json['is_dummy_live'];
     dummyUserLink = json['dummy_user_link'];
@@ -92,6 +95,7 @@ class Livestream {
     data['host_id'] = hostId;
     data['co-host_ids'] = coHostIds;
     data['created_at'] = createdAt;
+    data['last_heartbeat_at'] = lastHeartbeatAt;
     data['battle_created_at'] = battleCreatedAt;
     data['is_dummy_live'] = isDummyLive;
     data['dummy_user_link'] = dummyUserLink;

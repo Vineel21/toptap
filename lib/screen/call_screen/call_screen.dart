@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shortzz/common/extensions/string_extension.dart';
 import 'package:shortzz/common/service/agora_call_service.dart';
+import 'package:shortzz/common/service/call_signaling_service.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/common/config/agora_config.dart';
 import 'package:shortzz/common/utils/agora_diagnostic.dart';
@@ -13,6 +14,7 @@ class CallScreen extends StatefulWidget {
   final User user;
   final bool isVideoCall;
   final String channelId;
+  final String? callId;
   final String? token;
 
   const CallScreen({
@@ -20,6 +22,7 @@ class CallScreen extends StatefulWidget {
     required this.user,
     required this.isVideoCall,
     required this.channelId,
+    this.callId,
     this.token,
   });
 
@@ -39,6 +42,7 @@ class _CallScreenState extends State<CallScreen> {
   StreamSubscription<bool>? _connectionSubscription;
   StreamSubscription<int?>? _remoteUserSubscription;
   StreamSubscription<bool>? _callEndedSubscription;
+  StreamSubscription<CallSignalStatus?>? _signalSubscription;
   bool _isEndingCall = false;
   bool _isErrorDialogVisible = false;
   bool _isDisposed = false;
@@ -49,8 +53,34 @@ class _CallScreenState extends State<CallScreen> {
     // ✅ Use effective channel ID (respects fixed test channel setting)
     _channelId = AgoraConfig.effectiveChannelId(widget.channelId);
     _runtimeToken = widget.token ?? '';
+    _listenForRemoteCallState();
     _initializeCall();
     _setupListeners();
+  }
+
+  void _listenForRemoteCallState() {
+    final callId = widget.callId ?? widget.channelId;
+    _signalSubscription = CallSignalingService.instance.watch(callId).listen(
+      (status) {
+        if (!mounted || _isDisposed || _isEndingCall) return;
+        if (status == CallSignalStatus.declined ||
+            status == CallSignalStatus.missed ||
+            status == CallSignalStatus.failed ||
+            status == CallSignalStatus.ended) {
+          final message = switch (status) {
+            CallSignalStatus.declined => 'Call declined',
+            CallSignalStatus.missed => 'Call was not answered',
+            CallSignalStatus.failed => 'Could not reach this user',
+            _ => 'Call ended',
+          };
+          Get.snackbar('Call', message);
+          _endCall();
+        }
+      },
+      onError: (Object error) {
+        AgoraDebugHelper.debugPrint('Call signalling listener failed: $error');
+      },
+    );
   }
 
   Future<void> _initializeCall() async {
@@ -275,13 +305,14 @@ class _CallScreenState extends State<CallScreen> {
     if (!mounted || _isDisposed) return;
 
     final route = ModalRoute.of(context);
-    if (route == null || !route.isCurrent) {
-      return;
-    }
+    if (route == null) return;
 
-    final navigator = Get.key.currentState;
+    // Remove this exact CallScreen route. A notification action or snackbar
+    // may place another route above it, so `pop`/`isCurrent` can close the
+    // overlay while leaving the ended call visible underneath.
+    final navigator = route.navigator;
     if (navigator != null && navigator.canPop()) {
-      navigator.pop();
+      navigator.removeRoute(route);
     }
   }
 
@@ -299,6 +330,10 @@ class _CallScreenState extends State<CallScreen> {
     print('===================');
 
     try {
+      await CallSignalingService.instance.updateStatus(
+        widget.callId ?? widget.channelId,
+        CallSignalStatus.ended,
+      );
       await _callService.endCall();
       print('✅ Call service ended');
       _popCallScreen();
@@ -640,6 +675,7 @@ class _CallScreenState extends State<CallScreen> {
     _connectionSubscription?.cancel();
     _remoteUserSubscription?.cancel();
     _callEndedSubscription?.cancel();
+    _signalSubscription?.cancel();
     if (_callService.isInCall) {
       unawaited(_callService.endCall());
     }

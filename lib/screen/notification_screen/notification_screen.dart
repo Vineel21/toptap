@@ -7,44 +7,38 @@ import 'package:shortzz/common/widget/loader_widget.dart';
 import 'package:shortzz/common/widget/no_data_widget.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/misc/activity_notification_model.dart';
+import 'package:shortzz/model/misc/admin_notification_model.dart';
 import 'package:shortzz/screen/notification_screen/notification_screen_controller.dart';
 import 'package:shortzz/screen/notification_screen/widget/activity_notification_page.dart';
+import 'package:shortzz/screen/notification_screen/widget/system_notification_page.dart';
 import 'package:shortzz/utilities/text_style_custom.dart';
 import 'package:shortzz/utilities/theme_res.dart';
 
 class NotificationScreen extends StatelessWidget {
-  const NotificationScreen({super.key});
+  final bool showBackButton;
+
+  const NotificationScreen({super.key, this.showBackButton = false});
 
   @override
   Widget build(BuildContext context) {
-    final controller =
-        Get.put(NotificationScreenController());
+    final controller = Get.put(NotificationScreenController());
     return Scaffold(
       body: Column(
         children: [
           CustomAppBar(
               title: LKey.notifications.tr,
-              
-              showBackButton: false,
-              titleStyle:
-                  TextStyleCustom.unboundedSemiBold600(
-                      fontSize: 15,
-                      color: textDarkGrey(context)),
+              showBackButton: showBackButton,
+              titleStyle: TextStyleCustom.unboundedSemiBold600(
+                  fontSize: 15, color: textDarkGrey(context)),
               widget: CustomTabSwitcher(
-                  items: [
-                    (LKey.activity.tr),
-                    (LKey.system.tr)
-                  ],
-                  selectedIndex:
-                      controller.selectedTabIndex,
-                  margin: const EdgeInsets.only(
-                      left: 15, right: 15, bottom: 15),
+                  items: [(LKey.activity.tr), (LKey.system.tr)],
+                  selectedIndex: controller.selectedTabIndex,
+                  margin:
+                      const EdgeInsets.only(left: 15, right: 15, bottom: 15),
                   onTap: (index) {
                     controller.onTabChange(index);
-                    controller.pageController.animateToPage(
-                        index,
-                        duration: const Duration(
-                            milliseconds: 300),
+                    controller.pageController.animateToPage(index,
+                        duration: const Duration(milliseconds: 300),
                         curve: Curves.linear);
                   })),
           Expanded(
@@ -56,31 +50,24 @@ class NotificationScreen extends StatelessWidget {
                   onPageChanged: controller.onTabChange,
                   children: [
                     /// Activity Notifications Page
-                    _NotificationListWrapper<
-                            ActivityNotification>(
-                        isLoading: controller
-                            .isActivityNotification.value,
-                        isEmpty: controller
-                            .activityNotifications.isEmpty,
-                        items: controller
-                            .activityNotifications,
+                    _NotificationListWrapper<ActivityNotification>(
+                        isLoading: controller.isActivityNotification.value,
+                        isEmpty: controller.activityNotifications.isEmpty,
+                        items: controller.activityNotifications,
                         itemBuilder: (context, data) =>
                             ActivityNotificationPage(
-                                data: data,
-                                controller: controller),
-                        loadMore: controller
-                            .fetchActivityNotifications),
+                                data: data, controller: controller),
+                        loadMore: controller.fetchActivityNotifications),
 
                     /// Admin Notifications Page
-
-                    // _NotificationListWrapper<AdminNotificationData>(
-                    //   isLoading: controller.isAdminNotification.value,
-                    //   isEmpty: controller.adminNotifications.isEmpty,
-                    //   items: controller.adminNotifications,
-                    //   itemBuilder: (context, data) =>
-                    //       SystemNotificationPage(data: data),
-                    //   loadMore: controller.fetchAdminNotification,
-                    // ),
+                    _NotificationListWrapper<AdminNotificationData>(
+                      isLoading: controller.isAdminNotification.value,
+                      isEmpty: controller.adminNotifications.isEmpty,
+                      items: controller.adminNotifications,
+                      itemBuilder: (context, data) =>
+                          SystemNotificationPage(data: data),
+                      loadMore: controller.fetchAdminNotification,
+                    ),
                   ],
                 );
               }),

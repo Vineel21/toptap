@@ -48,6 +48,7 @@ class LivestreamScreenController extends BaseController {
 
   Timer? timer;
   Timer? minViewerTimeoutTimer;
+  Timer? presenceTimer;
   Function? onLikeTap;
 
   Setting? get setting => SessionManager.instance.getSettings();
@@ -155,6 +156,7 @@ class LivestreamScreenController extends BaseController {
     WakelockPlus.disable();
     timer?.cancel();
     minViewerTimeoutTimer?.cancel();
+    presenceTimer?.cancel();
     videoPlayerController.value?.dispose();
     liveStreamUserStatesListener?.cancel();
     liveStreamCommentsListener?.cancel();
@@ -234,6 +236,7 @@ class LivestreamScreenController extends BaseController {
 
       if (isHost) {
         startHostPublish();
+        _startPresenceMaintenance();
         return result;
       }
 
@@ -279,6 +282,7 @@ class LivestreamScreenController extends BaseController {
       }
 
       await _joinAudience();
+      _startPresenceMaintenance();
       return result;
     } catch (e) {
       Loggers.error('Error in loginRoom: $e');
@@ -485,41 +489,157 @@ class LivestreamScreenController extends BaseController {
     });
   }
 
-  Future<bool> _changeWatchingCount(int delta) async {
-    if (delta == 0) return true;
-
+  Future<void> _joinAudience() async {
+    if (_hasIncrementedWatchingCount) return;
     try {
-      return await db.runTransaction<bool>((transaction) async {
-        final snapshot = await transaction.get(liveStreamDocRef);
-        if (!snapshot.exists) return false;
+      _hasIncrementedWatchingCount = await db.runTransaction<bool>((tx) async {
+        final streamSnapshot = await tx.get(liveStreamDocRef);
+        if (!streamSnapshot.exists) return false;
 
-        final data = snapshot.data() as Map<String, dynamic>? ?? {};
-        final current =
-            (data[FirebaseConst.watchingCount] as num?)?.toInt() ?? 0;
-        final updated = current + delta;
-        transaction.update(liveStreamDocRef, {
-          FirebaseConst.watchingCount: updated < 0 ? 0 : updated,
-        });
+        final stateRef = liveStreamUserStatesRef.doc(myUserId.toString());
+        final stateSnapshot = await tx.get(stateRef);
+        final stateData = stateSnapshot.data() as Map<String, dynamic>? ?? {};
+        final alreadyCounted = stateData[FirebaseConst.countedAsViewer] == true;
+        final now = DateTime.now().millisecondsSinceEpoch;
+
+        tx.set(
+            stateRef,
+            {
+              FirebaseConst.countedAsViewer: true,
+              FirebaseConst.lastSeenAt: now,
+            },
+            SetOptions(merge: true));
+
+        if (!alreadyCounted) {
+          final streamData =
+              streamSnapshot.data() as Map<String, dynamic>? ?? {};
+          final current =
+              (streamData[FirebaseConst.watchingCount] as num?)?.toInt() ?? 0;
+          tx.update(liveStreamDocRef, {
+            FirebaseConst.watchingCount: current + 1,
+          });
+        }
         return true;
       });
     } catch (e) {
-      Loggers.error('Failed to update LIVE viewer count: $e');
-      return false;
+      Loggers.error('Failed to join LIVE audience: $e');
     }
-  }
-
-  Future<void> _joinAudience() async {
-    if (_hasIncrementedWatchingCount) return;
-    _hasIncrementedWatchingCount = await _changeWatchingCount(1);
   }
 
   Future<void> _leaveAudience() async {
     if (!_hasIncrementedWatchingCount) return;
     _hasIncrementedWatchingCount = false;
-    await _changeWatchingCount(-1);
+    try {
+      await db.runTransaction<void>((tx) async {
+        final streamSnapshot = await tx.get(liveStreamDocRef);
+        final stateRef = liveStreamUserStatesRef.doc(myUserId.toString());
+        final stateSnapshot = await tx.get(stateRef);
+        final stateData = stateSnapshot.data() as Map<String, dynamic>? ?? {};
+        final wasCounted = stateData[FirebaseConst.countedAsViewer] == true;
+
+        tx.set(
+            stateRef,
+            {
+              FirebaseConst.countedAsViewer: false,
+              FirebaseConst.lastSeenAt: DateTime.now().millisecondsSinceEpoch,
+            },
+            SetOptions(merge: true));
+
+        if (streamSnapshot.exists && wasCounted) {
+          final streamData =
+              streamSnapshot.data() as Map<String, dynamic>? ?? {};
+          final current =
+              (streamData[FirebaseConst.watchingCount] as num?)?.toInt() ?? 0;
+          tx.update(liveStreamDocRef, {
+            FirebaseConst.watchingCount: current > 0 ? current - 1 : 0,
+          });
+        }
+      });
+    } catch (e) {
+      Loggers.error('Failed to leave LIVE audience: $e');
+    }
     await updateLiveStreamData(
       coHostId: FieldValue.arrayRemove([myUserId]),
     );
+  }
+
+  void _startPresenceMaintenance() {
+    presenceTimer?.cancel();
+    unawaited(_maintainPresence());
+    presenceTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => unawaited(_maintainPresence()),
+    );
+  }
+
+  Future<void> _maintainPresence() async {
+    if (liveData.value.isDummyLive == 1 || _isLoggingOut) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (isHost) {
+      try {
+        await liveStreamDocRef.update({FirebaseConst.lastHeartbeatAt: now});
+        await _removeStaleAudience(now);
+      } catch (e) {
+        Loggers.error('LIVE heartbeat failed: $e');
+      }
+      return;
+    }
+
+    try {
+      await liveStreamUserStatesRef.doc(myUserId.toString()).set({
+        FirebaseConst.lastSeenAt: now,
+        FirebaseConst.countedAsViewer: true,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      Loggers.error('LIVE viewer heartbeat failed: $e');
+    }
+
+    final heartbeat =
+        liveData.value.lastHeartbeatAt ?? liveData.value.createdAt;
+    if (heartbeat != null && now - heartbeat > 60000) {
+      try {
+        final latest = await liveStreamDocRef.get();
+        final data = latest.data() as Map<String, dynamic>?;
+        final latestHeartbeat =
+            (data?[FirebaseConst.lastHeartbeatAt] as num?)?.toInt() ??
+                heartbeat;
+        if (DateTime.now().millisecondsSinceEpoch - latestHeartbeat > 60000) {
+          await liveStreamDocRef.delete();
+          await _handleRemoteStreamEnded();
+        }
+      } catch (e) {
+        Loggers.error('Failed to recover stale LIVE room: $e');
+      }
+    }
+  }
+
+  Future<void> _removeStaleAudience(int now) async {
+    final snapshot = await liveStreamUserStatesRef.get();
+    final staleRefs = <DocumentReference>[];
+    for (final doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>? ?? {};
+      if (data[FirebaseConst.countedAsViewer] != true) continue;
+      final userId = (data['user_id'] as num?)?.toInt();
+      if (userId == liveData.value.hostId) continue;
+      final lastSeen = (data[FirebaseConst.lastSeenAt] as num?)?.toInt();
+      if (lastSeen != null && now - lastSeen > 45000)
+        staleRefs.add(doc.reference);
+    }
+    if (staleRefs.isEmpty) return;
+
+    await db.runTransaction<void>((tx) async {
+      final streamSnapshot = await tx.get(liveStreamDocRef);
+      if (!streamSnapshot.exists) return;
+      final streamData = streamSnapshot.data() as Map<String, dynamic>? ?? {};
+      final count =
+          (streamData[FirebaseConst.watchingCount] as num?)?.toInt() ?? 0;
+      for (final ref in staleRefs) {
+        tx.update(ref, {FirebaseConst.countedAsViewer: false});
+      }
+      tx.update(liveStreamDocRef, {
+        FirebaseConst.watchingCount: (count - staleRefs.length).clamp(0, count),
+      });
+    });
   }
 
   Future<void> _handleRemoteStreamEnded() async {
@@ -754,6 +874,9 @@ class LivestreamScreenController extends BaseController {
             switch (change.type) {
               case DocumentChangeType.added:
                 _showJoinStreamSheet(state);
+                liveUsersStates.removeWhere(
+                  (user) => user.userId == state.userId,
+                );
                 liveUsersStates.add(state);
                 // Loggers.info('➕ User added: ${state.userId}');
                 break;

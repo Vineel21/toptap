@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shortzz/common/manager/session_manager.dart';
 import 'package:shortzz/common/widget/custom_app_bar.dart';
 import 'package:shortzz/screen/switch_account_screen/switch_account_controller.dart';
 import 'package:shortzz/utilities/text_style_custom.dart';
@@ -11,7 +12,9 @@ class SwitchAccountScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(SwitchAccountController());
-    
+    final user = SessionManager.instance.getUser();
+    final username = user?.username?.trim();
+
     return Scaffold(
       body: Column(
         children: [
@@ -53,7 +56,9 @@ class SwitchAccountScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '@username',
+                                username == null || username.isEmpty
+                                    ? (user?.fullname ?? 'Signed-in account')
+                                    : '@$username',
                                 style: TextStyleCustom.outFitRegular400(
                                   fontSize: 14,
                                   color: textLightGrey(context),
@@ -70,9 +75,9 @@ class SwitchAccountScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Add Account Button
                   InkWell(
                     onTap: controller.addAccount,
@@ -116,9 +121,9 @@ class SwitchAccountScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 40),
-                  
+
                   // Information Section
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -130,7 +135,7 @@ class SwitchAccountScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'About Account Switching',
+                          'Add another account',
                           style: TextStyleCustom.outFitMedium500(
                             fontSize: 16,
                             color: textDarkGrey(context),
@@ -138,10 +143,8 @@ class SwitchAccountScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '• Switch between multiple accounts without logging out\n'
-                          '• Keep your content and settings separate\n'
-                          '• Quick access to all your accounts\n'
-                          '• Secure and private switching',
+                          'Sign in with another account, or create a new one. '
+                          'Each account keeps its own content and settings.',
                           style: TextStyleCustom.outFitRegular400(
                             fontSize: 14,
                             color: textLightGrey(context),
@@ -150,9 +153,9 @@ class SwitchAccountScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   const Spacer(),
-                  
+
                   // Create New Account Button
                   SizedBox(
                     width: double.infinity,
