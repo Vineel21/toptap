@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shortzz/common/controller/base_controller.dart';
@@ -39,37 +40,36 @@ class AuthScreenController extends BaseController {
     if (passwordController.text.trim().isEmpty) {
       return showSnackBar(LKey.enterAPassword.tr);
     }
+    if (!GetUtils.isEmail(emailController.text.trim())) {
+      return showSnackBar(LKey.invalidEmail.tr);
+    }
     showLoader();
-    String? fullname;
-    if (GetUtils.isEmail(emailController.text.trim())) {
+    try {
       UserCredential? credential = await signInWithEmailAndPassword();
-      if (credential != null) {
-        if (credential.user?.emailVerified == false) {
-          stopLoader();
-          return showSnackBar(LKey.verifyEmailFirst.tr);
-        }
-        fullname = credential.user?.displayName;
-      } else {
-        stopLoader();
+      if (credential == null) {
         return;
       }
-    }
 
-    user.User? data;
-    try {
-      data = await _registration(
+      if (credential.user?.emailVerified == false) {
+        showSnackBar(LKey.verifyEmailFirst.tr);
+        return;
+      }
+
+      final data = await _registration(
           identity: emailController.text.trim(),
           loginMethod: LoginMethod.email,
-          fullname: fullname ?? emailController.text.split('@')[0]);
+          fullname: credential.user?.displayName ??
+              emailController.text.split('@')[0]);
+
+      _navigateScreen(data);
+    } on LoginApiException catch (e) {
+      Loggers.error('Backend login failed: ${e.message}');
+      showSnackBar(e.message);
     } catch (e, st) {
-      Loggers.error('Login registration failed: $e\n$st');
+      Loggers.error('Login failed: $e\n$st');
+      showSnackBar(_unexpectedLoginMessage(e));
     } finally {
       stopLoader();
-    }
-    if (data != null) {
-      _navigateScreen(data);
-    } else {
-      showSnackBar(LKey.somethingWentWrong.tr);
     }
   }
 
@@ -93,134 +93,153 @@ class AuthScreenController extends BaseController {
     //   return showSnackBar(LKey.passwordMismatch.tr);
     // }
     showLoader();
-    UserCredential? credential = await createUserWithEmailAndPassword();
-    if (credential != null) {
+    try {
+      final credential = await createUserWithEmailAndPassword();
+      if (credential == null) return;
+
       await _registration(
           identity: emailController.text.trim(),
           loginMethod: LoginMethod.email,
           fullname: fullNameController.text.trim());
-      credential.user?.updateDisplayName(fullNameController.text.trim());
-      credential.user?.sendEmailVerification();
+
+      await credential.user?.updateDisplayName(fullNameController.text.trim());
+      await credential.user?.sendEmailVerification();
       Get.back();
       Get.back();
       showSnackBar(LKey.verificationLinkSent.tr);
+    } on LoginApiException catch (e) {
+      Loggers.error('Backend registration failed: ${e.message}');
+      showSnackBar(e.message);
+    } catch (e, st) {
+      Loggers.error('Account creation failed: $e\n$st');
+      showSnackBar(_unexpectedLoginMessage(e));
+    } finally {
+      stopLoader();
     }
   }
 
-  void onGoogleTap() async {
+  Future<void> onGoogleTap() async {
     showLoader();
-    UserCredential? credential;
     try {
-      credential = await signInWithGoogle();
-    } catch (e) {
-      Loggers.error(e);
-      stopLoader();
-    }
+      final credential = await signInWithGoogle();
+      if (credential?.user == null) return;
 
-    if (credential?.user == null) {
-      stopLoader();
-      return;
-    }
-    user.User? data;
-    try {
-      data = await _registration(
-          identity: credential?.user?.email ?? '',
+      final data = await _registration(
+          identity: credential!.user?.email ?? '',
           loginMethod: LoginMethod.google,
-          fullname: credential?.user?.displayName ??
-              credential?.user?.email?.split('@')[0]);
+          fullname: credential.user?.displayName ??
+              credential.user?.email?.split('@')[0]);
+
+      _navigateScreen(data);
+    } on FirebaseAuthException catch (e, st) {
+      Loggers.error('Google Firebase login failed: ${e.code}\n$st');
+      showSnackBar(_firebaseAuthMessage(e));
+    } on PlatformException catch (e, st) {
+      Loggers.error('Google platform login failed: ${e.code}\n$st');
+      showSnackBar(_googlePlatformMessage(e));
+    } on LoginApiException catch (e) {
+      Loggers.error('Google backend login failed: ${e.message}');
+      showSnackBar(e.message);
     } catch (e, st) {
-      Loggers.error('Google login registration failed: $e\n$st');
+      Loggers.error('Google login failed: $e\n$st');
+      showSnackBar(_unexpectedLoginMessage(e));
     } finally {
       stopLoader();
     }
-    if (data != null) {
-      _navigateScreen(data);
-    } else {
-      showSnackBar(LKey.somethingWentWrong.tr);
-    }
   }
 
-  void onAppleTap() async {
+  Future<void> onAppleTap() async {
     showLoader();
-    UserCredential? credential;
     try {
-      credential = await signInWithApple();
-    } catch (e) {
-      Loggers.error(e);
-      stopLoader();
-    }
-    if (credential?.user == null) {
-      stopLoader();
-      return;
-    }
-    user.User? data;
-    try {
-      data = await _registration(
-          identity: credential?.user?.email ?? '',
+      final credential = await signInWithApple();
+      if (credential.user == null) return;
+
+      final data = await _registration(
+          identity: credential.user?.email ?? '',
           loginMethod: LoginMethod.apple,
-          fullname: credential?.user?.displayName ??
-              credential?.user?.email?.split('@')[0]);
+          fullname: credential.user?.displayName ??
+              credential.user?.email?.split('@')[0]);
+
+      _navigateScreen(data);
+    } on FirebaseAuthException catch (e, st) {
+      Loggers.error('Apple Firebase login failed: ${e.code}\n$st');
+      showSnackBar(_firebaseAuthMessage(e));
+    } on LoginApiException catch (e) {
+      Loggers.error('Apple backend login failed: ${e.message}');
+      showSnackBar(e.message);
     } catch (e, st) {
-      Loggers.error('Apple login registration failed: $e\n$st');
+      Loggers.error('Apple login failed: $e\n$st');
+      showSnackBar(_unexpectedLoginMessage(e));
     } finally {
       stopLoader();
     }
-    if (data != null) {
-      _navigateScreen(data);
-    } else {
-      showSnackBar(LKey.somethingWentWrong.tr);
-    }
   }
 
-  Future<user.User?> _registration(
+  Future<user.User> _registration(
       {required String identity,
       required LoginMethod loginMethod,
       String? fullname}) async {
-    String? deviceToken =
+    final deviceToken =
         await FirebaseNotificationManager.instance.getNotificationToken();
     if (deviceToken == null || deviceToken.isEmpty) {
-      Loggers.error('Device token is null/empty. Login aborted.');
-      return null;
+      Loggers.warning(
+          'Device token is unavailable. Continuing login without notifications.');
     }
 
-    user.User? userData = await UserService.instance.logInUser(
+    final userData = await UserService.instance.logInUser(
         identity: identity,
         loginMethod: loginMethod,
-        deviceToken: deviceToken,
+        deviceToken: deviceToken ?? '',
         fullName: fullname);
 
     Setting? setting = SessionManager.instance.getSettings();
-    if (userData?.newRegister == true &&
-        setting?.registrationBonusStatus == 1) {
+    if (userData.newRegister == true && setting?.registrationBonusStatus == 1) {
       final translations = Get.find<DynamicTranslations>();
-      final languageData = translations.keys[userData?.appLanguage] ?? {};
-      
-      // Log registration bonus notification attempt
-      Loggers.info('📢 Sending registration bonus notification to user: ${userData?.id}');
-      
-      NotificationService.instance.pushNotification(
-          title: languageData[LKey.registrationBonusTitle] ??
-              LKey.registrationBonusTitle.tr,
-          body: languageData[LKey.registrationBonusDescription] ??
-              LKey.registrationBonusDescription.tr,
-          type: NotificationType.other,
-          deviceType: userData?.device,
-          token: userData?.deviceToken,
-          authorizationToken: userData?.token?.authToken);
-    }
-    SubscriptionManager.shared.login('${userData?.id}');
-    if (userData != null) {
-      // Subscribe My Following Ids For Live streaming notification
+      final languageData = translations.keys[userData.appLanguage] ?? {};
 
-      for (int id in (userData.followingIds ?? [])) {
-        // Delay slightly to avoid overloading FCM
-        await Future.delayed(const Duration(milliseconds: 10));
-        await FirebaseNotificationManager.instance
-            .subscribeToTopic(topic: '$id');
+      // Log registration bonus notification attempt
+      Loggers.info(
+          '📢 Sending registration bonus notification to user: ${userData.id}');
+
+      try {
+        await NotificationService.instance.pushNotification(
+            title: languageData[LKey.registrationBonusTitle] ??
+                LKey.registrationBonusTitle.tr,
+            body: languageData[LKey.registrationBonusDescription] ??
+                LKey.registrationBonusDescription.tr,
+            type: NotificationType.other,
+            deviceType: userData.device,
+            token: userData.deviceToken,
+            authorizationToken: userData.token?.authToken);
+      } catch (e) {
+        Loggers.warning(
+            'Registration bonus notification failed after login: $e');
       }
-      return userData;
     }
-    return null;
+
+    // RevenueCat is optional. Missing purchase configuration must not prevent
+    // users from entering the app.
+    if (isPurchaseConfig) {
+      try {
+        await SubscriptionManager.shared.login('${userData.id}');
+      } catch (e) {
+        Loggers.warning('RevenueCat login failed after app login: $e');
+      }
+    }
+
+    // Notification setup is best-effort and must never block a valid login.
+    if (deviceToken?.isNotEmpty == true) {
+      for (int id in (userData.followingIds ?? [])) {
+        await Future.delayed(const Duration(milliseconds: 10));
+        try {
+          await FirebaseNotificationManager.instance
+              .subscribeToTopic(topic: '$id');
+        } catch (e) {
+          Loggers.warning('Unable to subscribe to notification topic $id: $e');
+        }
+      }
+    }
+    return userData;
   }
 
   Future<UserCredential?> createUserWithEmailAndPassword() async {
@@ -252,36 +271,90 @@ class AuthScreenController extends BaseController {
           password: passwordController.text.trim());
       return credential;
     } on FirebaseAuthException catch (e) {
-      stopLoader();
-      if (e.code == 'user-not-found') {
-        showSnackBar(LKey.noUserFound.tr);
-        Loggers.info(LKey.noUserFound.tr);
-      } else if (e.code == 'wrong-password') {
-        showSnackBar(LKey.incorrectPassword.tr);
-        Loggers.info(LKey.incorrectPassword.tr);
-      }
+      Loggers.error('Email login failed: ${e.code} - ${e.message}');
+      showSnackBar(_firebaseAuthMessage(e));
       return null;
-    } catch (e) {
+    } catch (e, st) {
+      Loggers.error('Email login failed unexpectedly: $e\n$st');
+      showSnackBar(_unexpectedLoginMessage(e));
       return null;
     }
   }
 
-  Future<UserCredential> signInWithGoogle() async {
+  Future<UserCredential?> signInWithGoogle() async {
     // Trigger the authentication flow
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    if (googleUser == null) return null;
 
     // Obtain the auth details from the request
-    final GoogleSignInAuthentication? googleAuth =
-        await googleUser?.authentication;
+    final googleAuth = await googleUser.authentication;
+
+    if (googleAuth.idToken == null) {
+      throw FirebaseAuthException(
+          code: 'google-token-missing',
+          message: 'Google did not return a valid sign-in token.');
+    }
 
     // Create a new credential
     final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
     );
 
     // Once signed in, return the UserCredential
     return await FirebaseAuth.instance.signInWithCredential(credential);
+  }
+
+  String _firebaseAuthMessage(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'invalid-credential':
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-login-credentials':
+        return 'The email or password is incorrect.';
+      case 'invalid-email':
+        return LKey.invalidEmail.tr;
+      case 'user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'email-not-verified':
+        return LKey.verifyEmailFirst.tr;
+      case 'network-request-failed':
+        return 'Unable to connect. Check your internet connection and try again.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a few minutes and try again.';
+      case 'operation-not-allowed':
+        return 'This login method is not enabled. Please contact support.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email using another login method.';
+      case 'google-token-missing':
+        return error.message ?? 'Google login could not be completed.';
+      default:
+        return error.message?.trim().isNotEmpty == true
+            ? error.message!.trim()
+            : 'Login could not be completed. Please try again.';
+    }
+  }
+
+  String _googlePlatformMessage(PlatformException error) {
+    if (error.code == 'sign_in_canceled') {
+      return 'Google login was cancelled.';
+    }
+    if (error.code == 'network_error') {
+      return 'Unable to connect to Google. Check your internet connection.';
+    }
+    if (error.code == 'sign_in_failed' || error.code == '10') {
+      return 'Google login is not configured for this app build.';
+    }
+    return error.message?.trim().isNotEmpty == true
+        ? error.message!.trim()
+        : 'Google login could not be completed. Please try again.';
+  }
+
+  String _unexpectedLoginMessage(Object error) {
+    final message = error.toString().replaceFirst('Exception: ', '').trim();
+    return message.isNotEmpty && message != 'null'
+        ? message
+        : LKey.somethingWentWrong.tr;
   }
 
   Future<UserCredential> signInWithApple() async {
@@ -309,8 +382,7 @@ class AuthScreenController extends BaseController {
 
   void _navigateScreen(user.User? user) {
     final lockedEmail = _resolveLockedEmail(user);
-    if (lockedEmail.isNotEmpty &&
-        (user?.userEmail?.trim().isEmpty ?? true)) {
+    if (lockedEmail.isNotEmpty && (user?.userEmail?.trim().isEmpty ?? true)) {
       user = user?.copyWith(userEmail: lockedEmail);
     }
 
@@ -332,7 +404,8 @@ class AuthScreenController extends BaseController {
           lockedEmail: lockedEmail,
           onUpdateUser: (updatedUser) {
             if (!ProfileCompletionHelper.isProfileComplete(updatedUser)) {
-              final missing = ProfileCompletionHelper.missingFields(updatedUser);
+              final missing =
+                  ProfileCompletionHelper.missingFields(updatedUser);
               showSnackBar(
                   'Complete your profile to continue: ${missing.join(', ')}.');
               return;

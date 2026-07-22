@@ -33,12 +33,21 @@ enum LoginMethod {
   }
 }
 
+class LoginApiException implements Exception {
+  const LoginApiException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class UserService {
   UserService._();
 
   static final UserService instance = UserService._();
 
-  Future<User?> logInUser({
+  Future<User> logInUser({
     String? fullName,
     required String identity,
     String? deviceToken,
@@ -56,11 +65,16 @@ class UserService {
         cancelAuthToken: true,
         fromJson: UserModel.fromJson);
 
-    if (model.status == true) {
-      SessionManager.instance.setUser(model.data);
-      SessionManager.instance.setAuthToken(model.data?.token);
+    final userData = model.data;
+    if (model.status != true || userData == null) {
+      throw LoginApiException(model.message?.trim().isNotEmpty == true
+          ? model.message!.trim()
+          : 'Unable to complete login. Please try again.');
     }
-    return model.data;
+
+    SessionManager.instance.setUser(userData);
+    SessionManager.instance.setAuthToken(userData.token);
+    return userData;
   }
 
   Future<StatusModel> deleteMyAccount() async {
@@ -247,7 +261,6 @@ class UserService {
     return model.data ?? [];
   }
 
-
   Future<StatusModel> followUser({required int userId}) async {
     StatusModel model = await ApiService.instance.call(
       url: WebService.user.followUser,
@@ -314,11 +327,14 @@ class UserService {
         param: preferences,
         fromJson: StatusModel.fromJson,
       );
-      
+
       if (model.status == true) {
         return {'success': true, 'message': model.message};
       } else {
-        return {'success': false, 'message': model.message ?? 'Failed to update preferences'};
+        return {
+          'success': false,
+          'message': model.message ?? 'Failed to update preferences'
+        };
       }
     } catch (e) {
       return {'success': false, 'message': 'Network error occurred'};
