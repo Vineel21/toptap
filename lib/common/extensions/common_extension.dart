@@ -32,15 +32,20 @@ extension Number on num {
   }
 
   String get elapsedTimeFromEpoch {
-    String time = '';
-    final joinTime = DateTime.fromMillisecondsSinceEpoch(toInt());
     final currentTime = DateTime.now();
+    final epochMilliseconds = toInt();
+    if (epochMilliseconds <= 0 ||
+        epochMilliseconds > currentTime.millisecondsSinceEpoch) {
+      return '0s';
+    }
+
+    String time = '';
+    final joinTime = DateTime.fromMillisecondsSinceEpoch(epochMilliseconds);
 
     final duration = currentTime.difference(joinTime);
     final hours = duration.inHours;
     final minutes = (duration.inMinutes % 60);
     final seconds = (duration.inSeconds % 60);
-    print('$hours $minutes $seconds');
     if (hours > 0) {
       time = '${hours}h ';
     }
@@ -51,7 +56,7 @@ extension Number on num {
       time += '${seconds}s';
     }
 
-    return time;
+    return time.isEmpty ? '0s' : time;
   }
 }
 

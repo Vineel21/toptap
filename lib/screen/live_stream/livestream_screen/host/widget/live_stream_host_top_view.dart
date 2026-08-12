@@ -7,7 +7,6 @@ import 'package:shortzz/common/manager/haptic_manager.dart';
 import 'package:shortzz/common/widget/text_button_custom.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/livestream/livestream.dart';
-import 'package:shortzz/model/livestream/livestream_user_state.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/livestream_screen_controller.dart';
 import 'package:shortzz/screen/live_stream/livestream_screen/widget/live_goal_progress_widget.dart';
 import 'package:shortzz/utilities/asset_res.dart';
@@ -25,154 +24,202 @@ class LiveStreamHostTopView extends StatelessWidget {
     return SafeArea(
       bottom: false,
       minimum: EdgeInsets.only(top: AppBar().preferredSize.height * 0.3),
-      child: Obx(
-        () {
-          Livestream stream = controller.liveData.value;
-          LivestreamUserState? userState = controller.liveUsersStates
-              .firstWhereOrNull((element) => element.userId == stream.hostId);
-          int count = stream.watchingCount ?? 0;
-          int watchingCount = count >= 0 ? count : 0;
-          bool isVisible = controller.isViewVisible.value;
+      child: Obx(() {
+        Livestream stream = controller.liveData.value;
+        int count = stream.watchingCount ?? 0;
+        int watchingCount = count >= 0 ? count : 0;
+        bool isVisible = controller.isViewVisible.value;
 
-          return AnimatedOpacity(
-            duration: const Duration(milliseconds: 100),
-            opacity: isVisible ? 1 : 0,
-            child: IgnorePointer(
-              ignoring: !isVisible,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Single Row: Profile + Username + Goal + View Count + Stop Button
-                    Row(
-                      children: [
-                        // User Profile Picture
-                        Container(
-                          height: 40,
-                          width: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: ClipOval(
-                            child: (controller.myUser.value?.profilePhoto ?? '')
-                                    .isNotEmpty
-                                ? Image.network(
-                                    controller.myUser.value!.profilePhoto!
-                                        .addBaseURL(),
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) => Icon(
-                                            Icons.person,
-                                            color: Colors.white,
-                                            size: 20),
-                                  )
-                                : Icon(Icons.person,
-                                    color: Colors.white, size: 20),
-                          ),
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 100),
+          opacity: isVisible ? 1 : 0,
+          child: IgnorePointer(
+            ignoring: !isVisible,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Identity, engagement and stream controls.
+                  Row(
+                    children: [
+                      // User Profile Picture
+                      Container(
+                        height: 40,
+                        width: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
-                        const SizedBox(width: 8),
-
-                        // Username
-                        Text(
-                          controller.myUser.value?.username ?? 'User',
-                          style: TextStyleCustom.outFitSemiBold600(
-                            color: whitePure(context),
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Live Goal Progress (Compact)
-                        Expanded(
-                          child: Container(
-                            width: 100,
-                            height:
-                                52, // Increased from 32 to 42 to accommodate content
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child:
-                                LiveGoalProgressWidget(controller: controller),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // View Count
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Image.asset(AssetRes.icEye_2,
-                                  height: 16, width: 16, color: Colors.white),
-                              const SizedBox(width: 4),
-                              Text(
-                                watchingCount.numberFormat,
-                                style: TextStyleCustom.outFitRegular400(
+                        child: ClipOval(
+                          child:
+                              (controller.myUser.value?.profilePhoto ?? '')
+                                  .isNotEmpty
+                              ? Image.network(
+                                  controller.myUser.value!.profilePhoto!
+                                      .addBaseURL(),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                )
+                              : Icon(
+                                  Icons.person,
                                   color: Colors.white,
-                                  fontSize: 12,
+                                  size: 20,
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
-                        const SizedBox(width: 8),
+                      ),
+                      const SizedBox(width: 8),
 
-                        // Start Battle Button (only when users available)
-                        if (_shouldShowStartBattleButton())
-                          GestureDetector(
-                            onTap: () {
-                              print('🚀 Start Battle button tapped!'); // Debug
-                              controller.startBattle();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: ColorRes.themeColor,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Icon(
-                                Icons.flash_on,
-                                color: Colors.white,
-                                size: 20,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    controller.myUser.value?.username ?? 'User',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyleCustom.outFitSemiBold600(
+                                      color: whitePure(context),
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.favorite,
+                                  color: ColorRes.likeRed,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  (stream.likeCount ?? 0).numberFormat,
+                                  style: TextStyleCustom.outFitRegular400(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            GestureDetector(
+                              onTap: controller.showEditLiveTitleDialog,
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      stream.description ?? 'Add LIVE title',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyleCustom.outFitRegular400(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  const Icon(
+                                    Icons.edit,
+                                    color: Colors.white70,
+                                    size: 12,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // View Count
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              AssetRes.icEye_2,
+                              height: 16,
+                              width: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              watchingCount.numberFormat,
+                              style: TextStyleCustom.outFitRegular400(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
 
-                        if (_shouldShowStartBattleButton())
-                          const SizedBox(width: 8),
-
-                        // Stop Button
+                      // Start Battle Button (only when users available)
+                      if (_shouldShowStartBattleButton())
                         GestureDetector(
-                          onTap: controller.onStopButtonTap,
+                          onTap: () {
+                            print('🚀 Start Battle button tapped!'); // Debug
+                            controller.startBattle();
+                          },
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: ColorRes.likeRed,
+                              color: ColorRes.themeColor,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Icon(Icons.power_settings_new,
-                                color: Colors.white, size: 20),
+                            child: Icon(
+                              Icons.flash_on,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 8),
+                      if (_shouldShowStartBattleButton())
+                        const SizedBox(width: 8),
 
-                    // Second Row: Coins and Likes
-                    _buildCoinsAndLikesRow(context, stream, userState),
-                  ],
-                ),
+                      // Stop Button
+                      GestureDetector(
+                        onTap: controller.onStopButtonTap,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: ColorRes.likeRed,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            Icons.power_settings_new,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  LiveGoalProgressWidget(controller: controller),
+                ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }),
     );
   }
 
@@ -183,68 +230,9 @@ class LiveStreamHostTopView extends StatelessWidget {
     // 3. There are enough users to start a battle (at least 1 other user besides host)
 
     Livestream stream = controller.liveData.value;
-    int userCount = controller.liveUsersStates.length;
-
-    print(
-        '🔍 Battle Button Check: battleType=${stream.battleType}, streamType=${stream.type}, userCount=$userCount'); // Debug
-
     return stream.battleType == BattleType.initiate &&
         stream.type != LivestreamType.battle &&
-        userCount >= 2; // Host + at least 1 other user
-  }
-
-  Widget _buildCoinsAndLikesRow(
-      BuildContext context, Livestream stream, LivestreamUserState? userState) {
-    return Row(
-      children: [
-        // Coins
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(AssetRes.icCoin, height: 16, width: 16),
-              const SizedBox(width: 4),
-              Text(
-                (userState?.totalCoin ?? 0).numberFormat,
-                style: TextStyleCustom.outFitRegular400(
-                  color: Colors.white,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // Likes
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.favorite, color: ColorRes.likeRed, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                (stream.likeCount ?? 0).numberFormat,
-                style: TextStyleCustom.outFitRegular400(
-                  color: Colors.white,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+        controller.canStartBattle;
   }
 }
 
@@ -254,12 +242,13 @@ class StopLiveStreamSheet extends StatelessWidget {
   final String? description;
   final String? positiveText;
 
-  const StopLiveStreamSheet(
-      {super.key,
-      required this.onTap,
-      this.title,
-      this.description,
-      this.positiveText});
+  const StopLiveStreamSheet({
+    super.key,
+    required this.onTap,
+    this.title,
+    this.description,
+    this.positiveText,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -269,12 +258,14 @@ class StopLiveStreamSheet extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 30),
           width: double.infinity,
           decoration: ShapeDecoration(
-              color: adaptiveBackground(context),
-              shape: const SmoothRectangleBorder(
-                  side: BorderSide(),
-                  borderRadius: SmoothBorderRadius.vertical(
-                      top:
-                          SmoothRadius(cornerRadius: 40, cornerSmoothing: 1)))),
+            color: adaptiveBackground(context),
+            shape: const SmoothRectangleBorder(
+              side: BorderSide(),
+              borderRadius: SmoothBorderRadius.vertical(
+                top: SmoothRadius(cornerRadius: 40, cornerSmoothing: 1),
+              ),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -291,38 +282,45 @@ class StopLiveStreamSheet extends StatelessWidget {
               Text(
                 title ?? LKey.endStreamTitle.tr,
                 style: TextStyleCustom.unboundedRegular400(
-                    fontSize: 15, color: adaptiveTextColor(context)),
+                  fontSize: 15,
+                  color: adaptiveTextColor(context),
+                ),
               ),
               Text(
                 description ?? LKey.endStreamMessage.tr,
                 style: TextStyleCustom.outFitLight300(
-                    fontSize: 17, color: ColorRes.textlightGreenColor),
+                  fontSize: 17,
+                  color: ColorRes.textlightGreenColor,
+                ),
               ),
               const SizedBox(height: 40),
               Row(
                 children: [
                   Expanded(
                     child: TextButtonCustom(
-                        onTap: Get.back,
-                        title: LKey.cancel.tr,
-                        backgroundColor: ColorRes.whitePure),
+                      onTap: Get.back,
+                      title: LKey.cancel.tr,
+                      backgroundColor: ColorRes.whitePure,
+                    ),
                   ),
                   Expanded(
-                      child: TextButtonCustom(
-                          onTap: () {
-                            Get.back();
-                            onTap();
-                          },
-                          title: positiveText ?? LKey.yes.tr,
-                          backgroundColor: themeAccentSolid(context),
-                          titleColor: whitePure(context),
-                          horizontalMargin: 5)),
+                    child: TextButtonCustom(
+                      onTap: () {
+                        Get.back();
+                        onTap();
+                      },
+                      title: positiveText ?? LKey.yes.tr,
+                      backgroundColor: themeAccentSolid(context),
+                      titleColor: whitePure(context),
+                      horizontalMargin: 5,
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: AppBar().preferredSize.height),
             ],
           ),
-        )
+        ),
       ],
     );
   }
@@ -336,14 +334,15 @@ class LiveStreamBorderButton extends StatelessWidget {
   final VoidCallback? onTap;
   final List<BoxShadow>? shadow;
 
-  const LiveStreamBorderButton(
-      {super.key,
-      this.backgroundColor,
-      required this.title,
-      this.imageIcon = '',
-      this.imageColor,
-      this.onTap,
-      this.shadow});
+  const LiveStreamBorderButton({
+    super.key,
+    this.backgroundColor,
+    required this.title,
+    this.imageIcon = '',
+    this.imageColor,
+    this.onTap,
+    this.shadow,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -357,9 +356,7 @@ class LiveStreamBorderButton extends StatelessWidget {
         decoration: ShapeDecoration(
           shape: SmoothRectangleBorder(
             borderRadius: SmoothBorderRadius(cornerRadius: 30),
-            side: BorderSide(
-              color: whitePure(context).withValues(alpha: .3),
-            ),
+            side: BorderSide(color: whitePure(context).withValues(alpha: .3)),
           ),
           shadows: shadow,
           color: backgroundColor ?? blackPure(context).withValues(alpha: .1),
@@ -370,9 +367,12 @@ class LiveStreamBorderButton extends StatelessWidget {
           children: [
             if (imageIcon.isNotEmpty)
               Image.asset(imageIcon, height: 16, width: 16, color: imageColor),
-            Text(title,
-                style: TextStyleCustom.outFitRegular400(
-                    color: whitePure(context))),
+            Text(
+              title,
+              style: TextStyleCustom.outFitRegular400(
+                color: whitePure(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -416,10 +416,11 @@ class LiveStreamCircleBorderButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: ShapeDecoration(
           shape: SmoothRectangleBorder(
-              borderRadius: SmoothBorderRadius(cornerRadius: 30),
-              side: BorderSide(
-                color: borderColor ?? whitePure(context).withValues(alpha: .3),
-              )),
+            borderRadius: SmoothBorderRadius(cornerRadius: 30),
+            side: BorderSide(
+              color: borderColor ?? whitePure(context).withValues(alpha: .3),
+            ),
+          ),
           color: (bgColor ?? blackPure(context)).withValues(alpha: .1),
         ),
         child: Image.asset(

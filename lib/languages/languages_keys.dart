@@ -3,8 +3,7 @@ class LKey {
   static const String createanAccount = "Create an account";
   static const String connectWithYourFriends =
       "Connect with your friends today!";
-  static const String emailOrPhone =
-      'Email Or Phone'; // Email or Phone Number
+  static const String emailOrPhone = 'Email Or Phone'; // Email or Phone Number
   static const String enterEmailOrPhone =
       'Enter Email Or Phone Number'; // Enter your email or phone
 
@@ -16,8 +15,7 @@ class LKey {
       ' Don\'t have an account ?'; // Don't have an account ?
 
   static const String language = "Language";
-  static const String fromAroundTheWorld =
-      "FROM AROUND\nTHE WORLD";
+  static const String fromAroundTheWorld = "FROM AROUND\nTHE WORLD";
   static const String continueText = "Continue";
   static const String orWith = "or With";
   static const String shareYourTalent =
@@ -27,8 +25,7 @@ class LKey {
   static const String select = "Select";
   static const String collectLikesAndComments =
       "Collect likes and comments\nfrom your fans, which boosts\nyou to create more content!";
-  static const String multipleSocialGateways =
-      "MULTIPLE SOCIAL\nGATEWAYS";
+  static const String multipleSocialGateways = "MULTIPLE SOCIAL\nGATEWAYS";
   static const String postContentOptions =
       "Post Reels, Images, Videos, Go\nLive. Choose any way\nfits to you & your audience!";
   static const String nearby = "Nearby";
@@ -56,8 +53,7 @@ class LKey {
   static const String coin = "Coin";
   static const String send = "Send";
   static const String sendGifts = "Send Gifts";
-  static const String yourGiftHasBeenSent =
-      "Your gift has been sent";
+  static const String yourGiftHasBeenSent = "Your gift has been sent";
   static const String successfully = "Successfully";
   static const String checkVideos = "Check Videos";
   static const String audioDetails = "Audio Details";
@@ -73,8 +69,7 @@ class LKey {
   static const String privacyPolicy = "Privacy Policy";
   static const String andText = "and";
   static const String termsOfUse = "Terms of Use";
-  static const String descriptionHere =
-      "Description here..";
+  static const String descriptionHere = "Description here..";
   static const String signIn = "SIGN IN";
   static const String toContinue = "TO CONTINUE";
   static const String enterYourEmail = "Enter Your Email";
@@ -83,8 +78,7 @@ class LKey {
   static const String logIn = "Login";
   static const String logOut = "Log out";
   static const String deleteAccount = "Delete Account";
-  static const String createAccountHere =
-      "Create account here!";
+  static const String createAccountHere = "Create account here!";
   static const String continueWith = "Continue With";
   static const String signUp = "SIGN UP";
   static const String startJourney = "START JOURNEY";
@@ -134,8 +128,7 @@ class LKey {
   static const String coinWallet = "Coin Wallet";
   static const String privacy = "Privacy";
   static const String whoCanSeePosts = "Who Can See Posts";
-  static const String showMyFollowings =
-      "Show My Followings";
+  static const String showMyFollowings = "Show My Followings";
   static const String showChatBtn = "Show Chat Button";
   static const String notifications = "Notifications";
   static const String general = "General";
@@ -182,8 +175,7 @@ class LKey {
       "Recharge your wallet. And\nsend gifts to your favorite creators.";
   static const String purchase = "Purchase";
   static const String withdrawals = "Withdrawals";
-  static const String requestWithdrawal =
-      "Request Withdrawal";
+  static const String requestWithdrawal = "Request Withdrawal";
   static const String pending = "Pending";
   static const String completed = "Completed";
   static const String rejected = "Rejected";
@@ -191,12 +183,10 @@ class LKey {
   static const String estimatedValue = "Estimated Value";
   static const String estimatedAmount = "Estimated Amount";
   static const String amount = "Amount";
-  static const String enterCoinAmount =
-      "Enter Coin Amount..";
+  static const String enterCoinAmount = "Enter Coin Amount..";
   static const String convertedAmount = "Converted Amount";
   static const String createFeed = "Create Feed";
-  static const String writeSomethingHere =
-      "Write something here..";
+  static const String writeSomethingHere = "Write something here..";
   static const String mention = "Mention";
   static const String hashtags = "Hashtags";
   static const String location = "Location";
@@ -217,13 +207,11 @@ class LKey {
   static const String users = "Users";
   static const String user = "User";
   static const String places = "Places";
-  static const String enterLiveStreamTitle =
-      "Enter Live Stream Title...";
+  static const String enterLiveStreamTitle = "Enter Live Stream Title...";
   static const String startLive = "Start Live";
   static const String stop = "Stop";
   static const String startBattle = "Start Battle";
-  static const String battleStartingIn =
-      "Battle\nStarting\nin";
+  static const String battleStartingIn = "Battle\nStarting\nin";
   static const String cancel = "Cancel";
   static const String yes = "Yes";
   static const String members = "Members";
@@ -239,12 +227,10 @@ class LKey {
   static const String defeat = "Defeat";
   static const String streamedFor = "Streamed For";
   static const String followersGained = "Followers Gained";
-  static const String totalCoinsCollected =
-      "Total Coins Collected";
+  static const String totalCoinsCollected = "Total Coins Collected";
   static const String goHome = "Go Home";
   static const String streamEnded = "Stream Ended!";
-  static const String yourStreamEnded =
-      "Your Stream Ended!";
+  static const String yourStreamEnded = "Your Stream Ended!";
   static const String belowIsTheSummaryOfYourStream =
       "Below is the summary of your stream!";
   static const String fromBattle = "From Battle";
@@ -264,8 +250,7 @@ class LKey {
       "No user found with that email. Please register with this email.";
   static const String incorrectPassword =
       "Incorrect password provided for this user.";
-  static const String weakPassword =
-      "The password provided is too weak.";
+  static const String weakPassword = "The password provided is too weak.";
   static const String accountExists =
       "The account already exists for that email.";
   static const String fullNameEmpty =
@@ -274,12 +259,10 @@ class LKey {
       "Please enter a username. The username field is empty.";
   static const String urlEmpty =
       "Please enter a URL link. The link field is empty.";
-  static const String validUrl =
-      "Please enter a valid URL link";
+  static const String validUrl = "Please enter a valid URL link";
   static const String urlTitleEmpty =
       "Please enter a title. The title field is empty.";
-  static const String validUsernameEmpty =
-      "Please enter a valid username.";
+  static const String validUsernameEmpty = "Please enter a valid username.";
   static const String confirmPasswordEmpty =
       "Please confirm your password. The confirm password field is empty.";
   static const String passwordMismatch =
@@ -295,44 +278,32 @@ class LKey {
   static const String noData = "No Data Found";
   static const String deleteLinkDescription =
       "Are you sure you want to delete this link? This action cannot be undone.";
-  static const String postIsBeginUploading =
-      "Uploading post...";
-  static const String storyIsBeginUploading =
-      "Uploading story...";
-  static const String postUploadSuccessfully =
-      "Post uploaded successfully.";
-  static const String storyUploadSuccess =
-      "Story uploaded successfully.";
+  static const String postIsBeginUploading = "Uploading post...";
+  static const String storyIsBeginUploading = "Uploading story...";
+  static const String postUploadSuccessfully = "Post uploaded successfully.";
+  static const String storyUploadSuccess = "Story uploaded successfully.";
   static const String uploadingFailed = "Uploading failed.";
   static const String addFilter = "Add Filter";
   static const String applyAll = "Apply to all";
-  static const String
-      anErrorOccurredWhileApplyingTheVideoFilter =
+  static const String anErrorOccurredWhileApplyingTheVideoFilter =
       "An error occurred while applying the video filter.";
   static const String anErrorOccurredWhileCompressVideo =
       "An error occurred while compress the video.";
   static const String deletePostTitle = "Delete Post?";
   static const String deletePostMessage =
       "Are you sure you want to delete this post? Once deleted, it cannot be restored.";
-  static const String postPinned =
-      "Your post has been pinned.";
-  static const String postUnpinned =
-      "Your post has been unpinned.";
-  static const String pinLimitExceeded =
-      "You can pin maximum @pin_count post.";
+  static const String postPinned = "Your post has been pinned.";
+  static const String postUnpinned = "Your post has been unpinned.";
+  static const String pinLimitExceeded = "You can pin maximum @pin_count post.";
   static const String pinLimitExceededForComment =
       "You can pin maximum @pin_comment_count comment.";
   static const String resetPasswordLinkSent =
       "A reset password link has been sent to your email. Please use it to reset your password.";
-  static const String copyrightInfringement =
-      "Copyright Infringement";
+  static const String copyrightInfringement = "Copyright Infringement";
   static const String hateSpeech = "Hate Speech";
-  static const String harassmentOrBullying =
-      "Harassment or Bullying";
-  static const String violenceOrThreats =
-      "Violence or Threats";
-  static const String nudityOrSexualContent =
-      "Nudity or Sexual Content";
+  static const String harassmentOrBullying = "Harassment or Bullying";
+  static const String violenceOrThreats = "Violence or Threats";
+  static const String nudityOrSexualContent = "Nudity or Sexual Content";
   static const String terrorismOrExtremistContent =
       "Terrorism or Extremist Content";
   static const String scamsOrFraud = "Scams or Fraud";
@@ -342,33 +313,26 @@ class LKey {
   static const String reason = "Reason";
   static const String provideReportReason =
       "Please provide a detailed reason for the report.";
-  static const String reportSubmitted =
-      "Report submitted successfully.";
+  static const String reportSubmitted = "Report submitted successfully.";
   static const String blockUser = "Block @username!";
   static const String unblockUser = "UnBlock @username!";
   static const String blockUserConfirmation =
       "Are you sure you want to block this user? You will no longer see their followers or following, and they won't be able to view your profile, photos, or posts. Once blocked, this user will no longer be able to chat with you, and you won’t be able to chat with them either.";
   static const String unblockUserConfirmation =
       "Once unblocked, this user will be able to chat with you again, and you can chat with them as well. They will also be able to see your profile, photos, and posts, and you will be able to view their followers and following.";
-  static const String youAreBlockThisUser =
-      "You are bock this user";
-  static const String thisUserIsFreeze =
-      "This user is freeze";
-  static const String deleteCommentTitle =
-      "Delete Comment!";
-  static const String deleteReplyCommentTitle =
-      "Delete Reply Comment!";
+  static const String youAreBlockThisUser = "You have blocked this user";
+  static const String thisUserIsFreeze = "This user is freeze";
+  static const String deleteCommentTitle = "Delete Comment!";
+  static const String deleteReplyCommentTitle = "Delete Reply Comment!";
   static const String deleteCommentMessage =
       "Are you sure you want to delete this comment? This action cannot be undone.";
   static const String deleteAccountMessage =
       "Do you really want to delete your account? All of your data will be deleted, and you won’t be able to recover it again!";
-  static const String proceedConfirmation =
-      "Do you really want to proceed?";
+  static const String proceedConfirmation = "Do you really want to proceed?";
   static const String logoutConfirmation =
       "Are you sure you want to log out? You will need to log in again to access your account.";
   static const String logoutTitle = "Logout!";
-  static const String deleteYourAccount =
-      "Delete Your Account!";
+  static const String deleteYourAccount = "Delete Your Account!";
   static const String noContentMessage =
       "There is nothing we can show you for now.";
   static const String music = "music";
@@ -380,8 +344,7 @@ class LKey {
   static const String startAgainMessage =
       "If you go back now, you'll lose this draft";
   static const String discover = "Discover";
-  static const String noLocationFound =
-      "No location found.";
+  static const String noLocationFound = "No location found.";
   static const String startSearchingLocation =
       "Start searching for a location.";
   static const String only = "Only";
@@ -390,14 +353,11 @@ class LKey {
   static const String selectGateway = "Select Gateway";
   static const String youCanNotEnterMoreThanEtc =
       "You cannot enter more than @coin coins!";
-  static const String redeemGatewayNotFound =
-      "Redeem gateway not found.";
-  static const String recordUpToSeconds =
-      "Record up to @second seconds.";
+  static const String redeemGatewayNotFound = "Redeem gateway not found.";
+  static const String recordUpToSeconds = "Record up to @second seconds.";
   static const String cameraMicrophonePermissionTitle =
       "Allow Camera & Microphone Access";
-  static const String
-      cameraMicrophonePermissionDescription =
+  static const String cameraMicrophonePermissionDescription =
       "To capture photos, record videos, and use voice features, @app_name needs access to your camera and microphone. Please grant permission in your device settings.";
   static const String openSetting = "Open setting";
   static const String deleteStoryTitle = "Delete Story?";
@@ -405,18 +365,14 @@ class LKey {
       "Are you sure you want to delete this story?";
   static const String deleteTextConfirmation =
       "Are you sure you want to delete this text?";
-  static const String musicDownloadFailed =
-      "Music download failed.";
+  static const String musicDownloadFailed = "Music download failed.";
   static const String viewMore = "View More";
   static const String downloadCompletedSuccessfully =
       "Download completed successfully!";
-  static const String downloadHasStarted =
-      "Download has started...";
+  static const String downloadHasStarted = "Download has started...";
   static const String userNotFound = "User not found.";
-  static const String deleteMessageTitle =
-      "Delete Message?";
-  static const String deleteChatUserTitle =
-      "Delete @user_name?";
+  static const String deleteMessageTitle = "Delete Message?";
+  static const String deleteChatUserTitle = "Delete @user_name?";
   static const String deleteChatUserDescription =
       "After deleting this user, you will not be able to restore the chat.";
   static const String deleteMessageDescription =
@@ -425,20 +381,16 @@ class LKey {
   static const String selectMedia = "Select Media";
   static const String video = "Video";
   static const String image = "Image";
-  static const String youReceivedAGift =
-      "You received a gift!";
-  static const String youSentAGift =
-      "You have sent a gift!";
-  static const String enableMicrophoneAccessTitle =
-      "Enable Microphone Access";
+  static const String youReceivedAGift = "You received a gift!";
+  static const String youSentAGift = "You have sent a gift!";
+  static const String enableMicrophoneAccessTitle = "Enable Microphone Access";
   static const String enableCameraAndMicrophoneAccessTitle =
       "Enable Camera and Microphone Access";
   static const String enablePhotoAccessTitle =
       "Enable photos and videos access";
   static const String enablePhotoAccessDescription =
       "To Share photos and videos, @app_name needs access to Storage on your device.";
-  static const String
-      enableCameraAndMicrophoneAccessDescription =
+  static const String enableCameraAndMicrophoneAccessDescription =
       "You'll need to enable camera and microphone access in your settings to send a photo or video message.";
   static const String enableMicrophoneAccessDescription =
       "You'll need to enable microphone access in your settings to send a voice message.";
@@ -453,13 +405,10 @@ class LKey {
       "You cannot send messages to this account unless you unblock them.";
   static const String youBlockedUser =
       "You Blocked @block_user_name \nYou cannot send messages to this account unless you unblock them.";
-  static const String youAreBlockedByThisUser =
-      "You are blocked by this user.";
-  static const String copiedToClipboard =
-      "Copied to clipboard.";
+  static const String youAreBlockedByThisUser = "You are blocked by this user.";
+  static const String copiedToClipboard = "Copied to clipboard.";
   static const String messageSent = "Message sent";
-  static const String storyUnavailable =
-      "Story unavailable";
+  static const String storyUnavailable = "Story unavailable";
   static const String deleteMusicTitle = "Delete Music?";
   static const String deleteMusicMessage =
       "Are you sure you want to delete this music? This action cannot be undone.";
@@ -467,18 +416,15 @@ class LKey {
       "Session Expired – Logged in on Another Device";
   static const String sessionExpiredMessage =
       "For security reasons, @app_name allows only one active session per account. It looks like you logged in on another device using the same email. To protect your account, we have automatically logged you out from this device.\n\nIf this wasn’t you, please log in again. You can change your password from the login screen if needed.";
-  static const String freezeTitle =
-      "Your Account Has Been Frozen";
-  static const String freezeAccountSubject =
-      "Request to Unfreeze My Account";
+  static const String freezeTitle = "Your Account Has Been Frozen";
+  static const String freezeAccountSubject = "Request to Unfreeze My Account";
   static const String freezeDescription =
       "We're sorry, but it looks like your account has been temporarily frozen. This might be due to unusual activity or a policy-related concern.\n\nFor your security and to ensure proper access, your account has been placed on hold. You won’t be able to use the app until the issue is resolved.\n\nTo unfreeze your account or to get more information, please reach out to our support team at @support_mail. We’re here to assist you and will do our best to help you get back up and running as quickly as possible.\n\nThank you for your patience and understanding.";
   static const String textRejectedAndContainsSuchThings =
       "Text is rejected because it includes such things: ";
   static const String mediaRejectedAndContainsSuchThings =
       "Media is rejected because it contains such things: ";
-  static const String restrictUserRequests =
-      "Restrict users requests to join.";
+  static const String restrictUserRequests = "Restrict users requests to join.";
   static const String endStreamTitle = "End This Stream!";
   static const String endStreamMessage =
       "Do you really want to end this streaming?";
@@ -488,48 +434,40 @@ class LKey {
   static const String requestTitle = "No Join Requests Yet";
   static const String requestDescription =
       "View and manage audience requests to join the live stream.";
-  static const String audienceListEmptyTitle =
-      "No Viewers Yet";
+  static const String audienceListEmptyTitle = "No Viewers Yet";
   static const String audienceListEmptyDescription =
       "Audience members will appear here when they join your live stream.";
-  static const String invitedListEmptyTitle =
-      "No One Invited";
+  static const String invitedListEmptyTitle = "No One Invited";
   static const String invitedListEmptyDescription =
       "You haven’t invited anyone yet. Invited users will be listed here.";
-  static const String coHostListEmptyTitle =
-      "No Co-hosts Yet";
+  static const String coHostListEmptyTitle = "No Co-hosts Yet";
   static const String coHostListEmptyDescription =
       "Co-hosts will appear here once they accept your invitation.";
   static const String sendingCoinsMessage =
       "You are sending coins to the above user.";
-  static const String noLivestreamsTitle =
-      "No Live Streams Yet";
+  static const String noLivestreamsTitle = "No Live Streams Yet";
   static const String noLivestreamsDescription =
       "Live streams will appear here when someone goes live.";
   static const String noUserReelsTitle = "No Reels Yet";
   static const String noUserReelsDescription =
       "This user hasn’t posted any reels so far.";
-  static const String noMyPostsTitle =
-      "You Haven’t Shared Any Posts";
+  static const String noMyPostsTitle = "You Haven’t Shared Any Posts";
   static const String noMyPostsDescription =
       "Start posting to share your moments with the community.";
   static const String noUserPostsTitle = "No Posts Yet";
   static const String noUserPostsDescription =
       "This user hasn’t shared any posts so far.";
-  static const String chatListEmptyTitle =
-      "Start a Conversation";
+  static const String chatListEmptyTitle = "Start a Conversation";
   static const String chatListEmptyDescription =
       "Your chats will show up here once you start messaging someone.";
-  static const String chatRequestEmptyTitle =
-      "No Requests Right Now";
+  static const String chatRequestEmptyTitle = "No Requests Right Now";
   static const String chatRequestEmptyDescription =
       "New chat requests will appear here when someone messages you.";
   static const String joinRequestSentDescription =
       "Your request to join the live stream is pending approval.";
   static const String joinedTheStream = "Joined the stream";
   static const String join = "Join";
-  static const String wantsYouToBeEtc =
-      "wants you to be in this live video";
+  static const String wantsYouToBeEtc = "wants you to be in this live video";
   static const String requestingToJoinTheStream =
       "requesting to join the stream.";
   static const String requestDeclinedByHost =
@@ -542,75 +480,58 @@ class LKey {
   static const String cannotLeaveDuringBattle =
       "You can’t leave the live stream while a battle is in progress.";
   static const String getBack = "Get Back";
-  static const String exitLiveStreamTitle =
-      "Exit Live Stream?";
+  static const String exitLiveStreamTitle = "Exit Live Stream?";
   static const String exitLiveStreamDescription =
       "Are you sure you want to leave the live stream?\nIf the stream has ended, you won't be able to join again. ";
   static const String scanQrCode = "Scan QR Code";
   static const String scanQrProfileSearch =
       "Scan the QR of the profile you want to search.";
-  static const String uploadFromGallery =
-      "Upload From Gallery";
-  static const String reelsEmptyTitle =
-      "Nothing to Watch Yet";
+  static const String uploadFromGallery = "Upload From Gallery";
+  static const String reelsEmptyTitle = "Nothing to Watch Yet";
   static const String reelsEmptyDescription =
       "Reels will appear here once new content is shared.";
-  static const String searchPageEmptyTitle =
-      "Nothing to Show Yet";
+  static const String searchPageEmptyTitle = "Nothing to Show Yet";
   static const String searchPageEmptyDescription =
       "Explore content by entering keywords in the search bar above.";
   static const String km = "km";
   static const String qrCodeMessage =
       "an artist based in Portland. I find inspiration in nature and urban life. Let’s connect and create something beautiful! 🌿🖌️";
-  static const String videoPathNotFound =
-      "Video path not found.";
-  static const String activityLikedPost =
-      "has liked your post";
-  static const String commentHasBeenLiked =
-      "liked your comment.";
+  static const String videoPathNotFound = "Video path not found.";
+  static const String activityLikedPost = "has liked your post";
+  static const String commentHasBeenLiked = "liked your comment.";
   static const String activityCommentedPost =
       "has commented on your post : @comment_description";
   static const String activityGIFComment =
       "has commented on your post with a GIF.";
   static const String activityReplyingToComment =
       "@username replied to your comment : @comment_description";
-  static const String notifyMentionedInPost =
-      "has mentioned you in post.";
-  static const String notifyMentionedInComment =
-      "Mentioned you in comment";
-  static const String notifyStartedFollowing =
-      "has started following you";
+  static const String notifyMentionedInPost = "has mentioned you in post.";
+  static const String notifyMentionedInComment = "Mentioned you in comment";
+  static const String notifyStartedFollowing = "has started following you";
   static const String notifyReplyMentionedInComment =
       "has reply mentioned you in comment : @comment_description";
-  static const String activitySentGift =
-      "has sent you gift";
-  static const String postCommentEmptyTitle =
-      "No Comments Yet";
+  static const String activitySentGift = "has sent you gift";
+  static const String postCommentEmptyTitle = "No Comments Yet";
   static const String postCommentEmptyDescription =
       "This post doesn’t have any comments. Join in and share your thoughts.";
-  static const String postSentSuccessfully =
-      "Post sent successfully";
+  static const String postSentSuccessfully = "Post sent successfully";
   static const String searchGiphy = "Search @brand_name";
-  static const String nearbyReelsPermissionTitle =
-      "Find Reels Around You";
+  static const String nearbyReelsPermissionTitle = "Find Reels Around You";
   static const String nearbyReelsPermissionDescription =
       "Allow location access to explore reels shared by people near you.";
   static const String locationServicesDisabledTitle =
       "Location Services Are Still Disabled";
   static const String locationServicesDisabledDescription =
       "To see nearby reels, please turn on location services in your device settings.";
-  static const String seePlacesNearYou =
-      "See places near you.";
+  static const String seePlacesNearYou = "See places near you.";
   static const String turnOnLocationServicesMessage =
       "To include nearby places, turn on location services.";
   static const String turnOnLocationServicesButton =
       "Turn on Location Services";
-  static const String nothingToShowHere =
-      "Nothing To Show Here";
+  static const String nothingToShowHere = "Nothing To Show Here";
   static const String userHidFollowings =
       "This user has decided not to show their followings.";
-  static const String blockListEmptyTitle =
-      "No Blocked Users";
+  static const String blockListEmptyTitle = "No Blocked Users";
   static const String blockListEmptyDescription =
       "Users you block will appear here. You haven’t blocked anyone yet.";
   static const String redeemMinCoinDescription =
@@ -622,8 +543,7 @@ class LKey {
   static const String unFreeze = "UnFreeze";
   static const String profileTemporarilyFrozen =
       "This profile has been temporarily frozen due to policy violations or suspicious activity. Access is restricted until review is complete.";
-  static const String profileUnavailable =
-      "Profile Unavailable";
+  static const String profileUnavailable = "Profile Unavailable";
   static const String admin = "Admin";
   static const String days = "Days";
   static const String weeks = "Weeks";
@@ -643,16 +563,14 @@ class LKey {
   static const String subscriptionDescription =
       "@price / Month. Billed @unit_label";
   static const String giveItATry = "Give it a try";
-  static const String freeTrialDescription =
-      "@count @get_period Free trial";
+  static const String freeTrialDescription = "@count @get_period Free trial";
   static const String annually = "Annually";
   static const String semiAnnually = "Semi Annually";
   static const String threeMonths = "Three Months";
   static const String twoMonths = "Two Months";
   static const String joinCancelledDescription =
       "The host has cancelled your invitation. You can no longer join the live stream.";
-  static const String joinedAsACoHost =
-      "joined as a co-host";
+  static const String joinedAsACoHost = "joined as a co-host";
   static const String minFollowersNeededToGoLive =
       "Min. @count Followers needed to go Live";
   static const String maxUserLinkAddDescription =
@@ -662,11 +580,9 @@ class LKey {
   static const String connection = "Connection";
   static const String noInternetDesc =
       "It looks like you are not\nconnected to the internet";
-  static const String downloadingFailed =
-      "Download failed.";
+  static const String downloadingFailed = "Download failed.";
   static const String from = "From";
-  static const String somethingWentWrong =
-      "Something went wrong.";
+  static const String somethingWentWrong = "Something went wrong.";
   static const String registrationBonusTitle =
       "🎉 Welcome Bonus Credited to Your Wallet!";
   static const String registrationBonusDescription =
@@ -675,16 +591,13 @@ class LKey {
   static const String member = "member";
   static const String battleEndedGiftNotSent =
       "Oops!! Battle Ended Please wait for a while..";
-  static const String liveStreamNotificationTitle =
-      "Hey, @name is now live";
+  static const String liveStreamNotificationTitle = "Hey, @name is now live";
   static const String liveStreamNotificationBody =
       "Hurry up and join before it ends.";
-  static const String livestreamHasEnded =
-      "Livestream has ended.";
+  static const String livestreamHasEnded = "Livestream has ended.";
 
   // Profile Image Picker
-  static const String selectProfileImage =
-      "Select Profile Image";
+  static const String selectProfileImage = "Select Profile Image";
   static const String camera = "Camera";
   static const String gallery = "Gallery";
 }

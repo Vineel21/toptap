@@ -116,7 +116,7 @@ class SendGiftSheet extends StatelessWidget {
                   itemBuilder: (context, index) {
                     Gift gift = gifts[index];
                     return InkWell(
-                      onTap: () => controller.onGiftTap(gift, context),
+                      onTap: () => controller.onGiftTap(gift),
                       child: Container(
                         decoration: ShapeDecoration(
                           shape: SmoothRectangleBorder(

@@ -8,7 +8,7 @@ import 'package:shortzz/common/widget/custom_toggle.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/screen/accessibility_settings_screen/accessibility_settings_screen.dart';
-import 'package:shortzz/screen/activity_screen/activity_screen.dart';
+import 'package:shortzz/screen/notification_screen/notification_screen.dart';
 import 'package:shortzz/screen/blocked_user_screen/blocked_user_screen.dart';
 import 'package:shortzz/screen/content_preferences_screen/content_preferences_screen.dart';
 import 'package:shortzz/screen/edit_profile_screen/edit_profile_screen.dart';
@@ -16,7 +16,6 @@ import 'package:shortzz/screen/help_center_screen/help_center_screen.dart';
 import 'package:shortzz/screen/live_stream/create_live_stream_screen/create_live_stream_screen.dart';
 import 'package:shortzz/screen/playback_settings_screen/playback_settings_screen.dart';
 import 'package:shortzz/screen/qr_code_screen/qr_code_screen.dart';
-import 'package:shortzz/screen/report_sheet/report_sheet.dart';
 import 'package:shortzz/screen/saved_post_screen/saved_post_screen.dart';
 import 'package:shortzz/screen/settings_screen/settings_screen_controller.dart';
 import 'package:shortzz/screen/settings_screen/widget/setting_icon_text_with_arrow.dart';
@@ -49,8 +48,7 @@ class SettingsScreen extends StatelessWidget {
                 bottom: AppBar().preferredSize.height,
               ),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
 
@@ -209,8 +207,7 @@ class SettingsScreen extends StatelessWidget {
                     title: "Live",
                     onTap: () {
                       Get.to(
-                        () =>
-                            const CreateLiveStreamScreen(),
+                        () => const CreateLiveStreamScreen(),
                       );
                     },
                   ),
@@ -234,12 +231,10 @@ class SettingsScreen extends StatelessWidget {
                   ),
 
                   SettingIconTextWithArrow(
-                    icon: AssetRes
-                        .icMoon, // use any appropriate icon
+                    icon: AssetRes.icMoon, // use any appropriate icon
                     title: 'Theme',
                     widget: Obx(() {
-                      final themeController =
-                          Get.find<ThemeController>();
+                      final themeController = Get.find<ThemeController>();
                       return CustomToggle(
                         isOn: themeController.isDarkModeRx,
                         onChanged: (val) {
@@ -253,8 +248,7 @@ class SettingsScreen extends StatelessWidget {
                     title: 'Push Notifications',
                     onTap: () {
                       Get.to(
-                        () =>
-                            const NotificationSettingsScreen(),
+                        () => const NotificationSettingsScreen(),
                       );
                     },
                   ),
@@ -271,7 +265,9 @@ class SettingsScreen extends StatelessWidget {
                     icon: AssetRes.icactivityicon,
                     title: 'Activity',
                     onTap: () {
-                      Get.to(() => const ActivityScreen());
+                      Get.to(
+                        () => const NotificationScreen(showBackButton: true),
+                      );
                     },
                   ),
                   // SettingIconTextWithArrow(
@@ -297,18 +293,13 @@ class SettingsScreen extends StatelessWidget {
                     () => SettingIconTextWithArrow(
                       icon: AssetRes.icEye_1,
                       title: LKey.whoCanSeePosts,
-                      widget:
-                          CustomDropDownBtn<WhoCanSeePost>(
+                      widget: CustomDropDownBtn<WhoCanSeePost>(
                         items: WhoCanSeePost.values,
-                        onChanged: controller
-                                .isUpdateApiCalled.value
+                        onChanged: controller.isUpdateApiCalled.value
                             ? null
-                            : controller
-                                .onChangedWhoCanSeePost,
-                        selectedValue: controller
-                            .selectedWhoCanSeePost.value,
-                        style: TextStyleCustom
-                            .outFitRegular400(
+                            : controller.onChangedWhoCanSeePost,
+                        selectedValue: controller.selectedWhoCanSeePost.value,
+                        style: TextStyleCustom.outFitRegular400(
                           fontSize: 15,
                           color: textLightGrey(context),
                         ),
@@ -321,10 +312,8 @@ class SettingsScreen extends StatelessWidget {
                       icon: AssetRes.icEye_1,
                       title: LKey.showMyFollowings,
                       widget: CustomToggle(
-                        isOn: (controller.myUser.value
-                                    ?.showMyFollowing ==
-                                1)
-                            .obs,
+                        isOn:
+                            (controller.myUser.value?.showMyFollowing == 1).obs,
                         onChanged: (value) {
                           controller.onChangedToggle(
                             value,
@@ -339,10 +328,8 @@ class SettingsScreen extends StatelessWidget {
                       icon: AssetRes.icMessage,
                       title: LKey.showChatBtn,
                       widget: CustomToggle(
-                        isOn: (controller.myUser.value
-                                    ?.receiveMessage ==
-                                1)
-                            .obs,
+                        isOn:
+                            (controller.myUser.value?.receiveMessage == 1).obs,
                         onChanged: (value) async {
                           controller.onChangedToggle(
                             value,
@@ -376,12 +363,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: AssetRes.icreporticon,
                     title: "Report a Problem",
                     onTap: () {
-                      Get.bottomSheet(
-                        const ReportSheet(
-                          reportType: ReportType.user,
-                        ),
-                        isScrollControlled: true,
-                      );
+                      Get.to(() => const HelpCenterScreen());
                     },
                   ),
                   SettingIconTextWithArrow(
@@ -433,8 +415,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () {
                       Get.to(
                         () => const TermAndPrivacyScreen(
-                          type: TermAndPrivacyType
-                              .termAndCondition,
+                          type: TermAndPrivacyType.termAndCondition,
                         ),
                       );
                     },
@@ -478,17 +459,14 @@ class SubscriptionCard extends StatefulWidget {
   });
 
   @override
-  State<SubscriptionCard> createState() =>
-      _SubscriptionCardState();
+  State<SubscriptionCard> createState() => _SubscriptionCardState();
 }
 
-class _SubscriptionCardState
-    extends State<SubscriptionCard> {
+class _SubscriptionCardState extends State<SubscriptionCard> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      bool isVerify =
-          widget.controller.myUser.value?.isVerify == 1;
+      bool isVerify = widget.controller.myUser.value?.isVerify == 1;
       return InkWell(
         onTap: () {
           if (!isVerify) {
@@ -531,9 +509,7 @@ class _SubscriptionCardState
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    text: isVerify
-                        ? LKey.youAre.tr
-                        : LKey.become.tr,
+                    text: isVerify ? LKey.youAre.tr : LKey.become.tr,
                     style: TextStyleCustom.outFitRegular400(
                       color: whitePure(context),
                       fontSize: 15,
@@ -541,17 +517,14 @@ class _SubscriptionCardState
                     children: [
                       TextSpan(
                         text: ' ${LKey.plus.tr} ',
-                        style: TextStyleCustom
-                            .outFitExtraBold800(
+                        style: TextStyleCustom.outFitExtraBold800(
                           color: whitePure(context),
                           fontSize: 15,
                         ),
                       ),
                       TextSpan(
-                        text:
-                            isVerify ? LKey.member.tr : '',
-                        style: TextStyleCustom
-                            .outFitRegular400(
+                        text: isVerify ? LKey.member.tr : '',
+                        style: TextStyleCustom.outFitRegular400(
                           color: whitePure(context),
                           fontSize: 15,
                         ),

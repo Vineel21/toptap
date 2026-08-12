@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shortzz/common/controller/base_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 class HelpCenterController extends BaseController {
   void openGettingStarted() {
@@ -82,19 +83,26 @@ class HelpCenterController extends BaseController {
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
       path: 'support@TapTop.com',
-      query:
-          'subject=Support Request&body=Please describe your issue:',
+      query: 'subject=Support Request&body=Please describe your issue:',
     );
 
     try {
-      await launchUrl(emailLaunchUri);
+      final opened = await launchUrl(emailLaunchUri);
+      if (!opened) {
+        await _copySupportEmail();
+      }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Could not open email client. Please email us at support@TapTop.com',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      await _copySupportEmail();
     }
+  }
+
+  Future<void> _copySupportEmail() async {
+    await Clipboard.setData(const ClipboardData(text: 'support@TapTop.com'));
+    Get.snackbar(
+      'Support email copied',
+      'No email app was found. Send your message to support@TapTop.com',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   void callSupport() async {
@@ -153,8 +161,7 @@ class HelpCenterController extends BaseController {
   void _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     try {
-      await launchUrl(uri,
-          mode: LaunchMode.externalApplication);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
       Get.snackbar(
         'Error',

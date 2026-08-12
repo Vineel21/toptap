@@ -27,6 +27,10 @@ class RequestWithdrawalScreenController extends BaseController {
   void _fetchLocalData() {
     settings.value = SessionManager.instance.getSettings();
     myUser.value = SessionManager.instance.getUser();
+    final gateways = settings.value?.redeemGateways ?? const [];
+    if (selectedGateway.value.isEmpty && gateways.isNotEmpty) {
+      selectedGateway.value = gateways.first.title ?? '';
+    }
   }
 
   void onChanged(String value) {
@@ -53,16 +57,26 @@ class RequestWithdrawalScreenController extends BaseController {
     }
   }
 
-  void onSubmit() async {
+  Future<void> onSubmit() async {
     if ((settings.value?.redeemGateways ?? []).isEmpty) {
       return showSnackBar(LKey.redeemGatewayNotFound.tr);
     }
-    int amount = amountController.text.trim().isEmpty
-        ? 0
-        : int.parse(amountController.text.trim());
+    final amount = int.tryParse(amountController.text.trim()) ?? 0;
 
-    if (amount <= (settings.value?.minRedeemCoins ?? 0)) {
+    if (amount < (settings.value?.minRedeemCoins ?? 0)) {
       return showSnackBar(LKey.redeemMinCoinDescription.tr);
+    }
+    if (amount <= 0) {
+      return showSnackBar('Enter a valid withdrawal amount');
+    }
+    if (amount > (myUser.value?.coinWallet?.toInt() ?? 0)) {
+      return showSnackBar('You do not have enough coins');
+    }
+    if (selectedGateway.value.trim().isEmpty) {
+      return showSnackBar('Select a withdrawal method');
+    }
+    if (accountDetailsController.text.trim().isEmpty) {
+      return showSnackBar('Enter your account details');
     }
 
     showLoader();
@@ -75,11 +89,10 @@ class RequestWithdrawalScreenController extends BaseController {
 
     stopLoader();
     if (model.status == true) {
+      myUser.value?.coinWallet = (myUser.value?.coinWallet ?? 0) - amount;
+      SessionManager.instance.setUser(myUser.value);
       Get.back();
     }
-    myUser.value?.coinWallet = (myUser.value?.coinWallet ?? 0) -
-        int.parse(amountController.text.trim());
-    SessionManager.instance.setUser(myUser.value);
     showSnackBar(model.message);
   }
 }

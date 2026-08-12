@@ -14,6 +14,7 @@ import 'package:shortzz/common/extensions/user_extension.dart';
 import 'package:shortzz/common/manager/logger.dart';
 import 'package:shortzz/common/manager/session_manager.dart';
 import 'package:shortzz/common/manager/story_view/add_to_cart/add_to_cart_animation.dart';
+import 'package:shortzz/common/service/api/user_service.dart';
 import 'package:shortzz/languages/languages_keys.dart';
 import 'package:shortzz/model/chat/chat_thread.dart';
 import 'package:shortzz/model/post_story/story/story_model.dart';
@@ -967,37 +968,62 @@ class StoryViewState extends State<StoryView> with TickerProviderStateMixin {
     });
   }
 
-  void sendReply(
+  Future<void> sendReply(
       {required StoryItem item,
       required String textReply,
-      String? imageReply}) {
+      String? imageReply}) async {
     if (textReply.isEmpty && imageReply == null) return;
-    User? user = item.story?.user;
-    ChatThread conversation = ChatThread(
+    final story = item.story;
+    final recipientId = story?.userId ?? story?.user?.id;
+    if (story == null || recipientId == null || recipientId <= 0) {
+      BaseController.share.showSnackBar('Unable to find the story owner.');
+      return;
+    }
+    if (recipientId == SessionManager.instance.getUserID()) return;
+
+    try {
+      final User? user = story.user?.id == recipientId
+          ? story.user
+          : await UserService.instance.fetchUserDetails(userId: recipientId);
+      if (user == null) {
+        BaseController.share.showSnackBar('Unable to send this reply.');
+        return;
+      }
+
+      final conversation = ChatThread(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         lastMsg: '',
         msgCount: 0,
         isDeleted: false,
         deletedId: 0,
         iAmBlocked: false,
-        iBlocked: user?.isBlock ?? false,
+        iBlocked: user.isBlock ?? false,
         requestType: UserRequestAction.accept.title,
         chatType:
-            user?.isFollowing ?? false ? ChatType.approved : ChatType.request,
+            user.isFollowing ?? false ? ChatType.approved : ChatType.request,
         conversationId:
-            [SessionManager.instance.getUserID(), user?.id].conversationId,
-        userId: user?.id);
-    conversation.chatUser = user?.appUser;
+            [SessionManager.instance.getUserID(), recipientId].conversationId,
+        userId: recipientId,
+      );
+      conversation.chatUser = user.appUser;
 
-    var chattingController = Get.put(ChatScreenController(conversation.obs),
-        tag: '${conversation.conversationId}');
-    if (item.story != null) {
+      final chattingController = Get.put(
+        ChatScreenController(conversation.obs),
+        tag: '${conversation.conversationId}',
+      );
       HapticFeedback.mediumImpact();
-      chattingController.sendStoryReply(
-          story: item.story!, textReply: textReply, imageReply: imageReply);
+      await chattingController.sendStoryReply(
+        story: story,
+        textReply: textReply,
+        imageReply: imageReply,
+      );
       textEditingController.text = '';
       FocusManager.instance.primaryFocus?.unfocus();
       BaseController.share.showSnackBar(LKey.messageSent.tr);
+    } catch (e, stackTrace) {
+      Loggers.error('Story reply failed: $e\n$stackTrace');
+      BaseController.share
+          .showSnackBar('Unable to send this reply. Try again.');
     }
   }
 }

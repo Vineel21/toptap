@@ -30,19 +30,19 @@ class LiveStreamUserInfoSheet extends StatefulWidget {
   final AppUser? liveUser;
   final LivestreamScreenController controller;
 
-  const LiveStreamUserInfoSheet(
-      {super.key,
-      required this.isAudience,
-      this.liveUser,
-      required this.controller});
+  const LiveStreamUserInfoSheet({
+    super.key,
+    required this.isAudience,
+    this.liveUser,
+    required this.controller,
+  });
 
   @override
   State<LiveStreamUserInfoSheet> createState() =>
       _LiveStreamUserInfoSheetState();
 }
 
-class _LiveStreamUserInfoSheetState
-    extends State<LiveStreamUserInfoSheet> {
+class _LiveStreamUserInfoSheetState extends State<LiveStreamUserInfoSheet> {
   Rx<User?> user = Rx(null);
   RxBool isLoading = true.obs;
   RxBool isFollowUnFollowInProcess = false.obs;
@@ -55,30 +55,38 @@ class _LiveStreamUserInfoSheetState
 
   _fetchUserProfile() async {
     isLoading.value = true;
-    user.value = await UserService.instance
-        .fetchUserDetails(userId: widget.liveUser?.userId);
+    user.value = await UserService.instance.fetchUserDetails(
+      userId: widget.liveUser?.userId,
+    );
     isLoading.value = false;
   }
 
   Future<void> followUnFollowUser() async {
     int userId = user.value?.id ?? -1;
     if (isFollowUnFollowInProcess.value) return;
+    final wasFollowing = user.value?.isFollowing ?? false;
     isFollowUnFollowInProcess.value = true;
     FollowController followController;
-    if (Get.isRegistered<FollowController>(
-        tag: userId.toString())) {
-      followController = Get.find<FollowController>(
-          tag: userId.toString());
+    if (Get.isRegistered<FollowController>(tag: userId.toString())) {
+      followController = Get.find<FollowController>(tag: userId.toString());
       followController.updateUser(user.value);
     } else {
-      followController = Get.put(FollowController(user),
-          tag: userId.toString());
+      followController = Get.put(
+        FollowController(user),
+        tag: userId.toString(),
+      );
     }
 
-    User? updateUser =
-        await followController.followUnFollowUser();
-    widget.controller.updateUserStateToFirestore(userId,
-        isFollow: updateUser?.isFollowing);
+    User? updateUser = await followController.followUnFollowUser();
+    final isFollowing = updateUser?.isFollowing;
+    widget.controller.updateUserStateToFirestore(userId, isFollow: isFollowing);
+    if (isFollowing != null &&
+        isFollowing != wasFollowing &&
+        userId == widget.controller.liveData.value.hostId &&
+        widget.controller.liveData.value.hasLiveGoal == true &&
+        widget.controller.liveData.value.liveGoalType == 'followers') {
+      widget.controller.incrementLiveGoalProgress(isFollowing ? 1 : -1);
+    }
     isFollowUnFollowInProcess.value = false;
     user.update((val) {
       val?.isFollowing = updateUser?.isFollowing;
@@ -96,9 +104,8 @@ class _LiveStreamUserInfoSheetState
           decoration: ShapeDecoration(
             shape: const SmoothRectangleBorder(
               borderRadius: SmoothBorderRadius.vertical(
-                  top: SmoothRadius(
-                      cornerRadius: 40,
-                      cornerSmoothing: 1)),
+                top: SmoothRadius(cornerRadius: 40, cornerSmoothing: 1),
+              ),
             ),
             color: scaffoldBackgroundColor(context),
           ),
@@ -109,276 +116,213 @@ class _LiveStreamUserInfoSheetState
               bool isFollow = user?.isFollowing ?? false;
               List<StatItem> statItems = [
                 StatItem(
-                    value: user?.totalPostLikesCount ?? 0,
-                    label: LKey.likes.tr),
+                  value: user?.totalPostLikesCount ?? 0,
+                  label: LKey.likes.tr,
+                ),
                 StatItem(
-                    value: user?.followerCount ?? 0,
-                    label: LKey.followers.tr),
+                  value: user?.followerCount ?? 0,
+                  label: LKey.followers.tr,
+                ),
                 StatItem(
-                    value: user?.followingCount ?? 0,
-                    label: LKey.following.tr),
+                  value: user?.followingCount ?? 0,
+                  label: LKey.following.tr,
+                ),
               ];
 
               return isLoading.value
                   ? const LoaderWidget()
                   : Stack(
-                      alignment:
-                          AlignmentDirectional.topEnd,
+                      alignment: AlignmentDirectional.topEnd,
                       children: [
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(
-                                  horizontal: 30.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 30.0),
                           child: Column(
                             children: [
-                              const CustomDivider(
-                                  width: 100),
+                              const CustomDivider(width: 100),
                               const SizedBox(height: 10),
                               CustomImage(
-                                  size: const Size(93, 93),
-                                  image: user?.profilePhoto
-                                      ?.addBaseURL(),
-                                  fullName: user?.fullname),
+                                size: const Size(93, 93),
+                                image: user?.profilePhoto?.addBaseURL(),
+                                fullName: user?.fullname,
+                              ),
                               const SizedBox(height: 10),
                               FullNameWithBlueTick(
-                                  username: user?.username,
-                                  isVerify: user?.isVerify,
-                                  fontSize: 14,
-                                  iconSize: 18),
+                                username: user?.username,
+                                isVerify: user?.isVerify,
+                                fontSize: 14,
+                                iconSize: 18,
+                              ),
                               Text(
                                 user?.fullname ?? '',
-                                style: TextStyleCustom
-                                    .outFitRegular400(
-                                        fontSize: 16,
-                                        color:
-                                            textLightGrey(
-                                                context)),
+                                style: TextStyleCustom.outFitRegular400(
+                                  fontSize: 16,
+                                  color: textLightGrey(context),
+                                ),
                               ),
-                              if ((user?.bio ?? '')
-                                  .isNotEmpty)
+                              if ((user?.bio ?? '').isNotEmpty)
                                 const SizedBox(height: 18),
-                              if ((user?.bio ?? '')
-                                  .isNotEmpty)
+                              if ((user?.bio ?? '').isNotEmpty)
                                 Text(
                                   user?.bio ?? '',
-                                  style: TextStyleCustom
-                                      .outFitLight300(
-                                          fontSize: 15,
-                                          color:
-                                              textLightGrey(
-                                                  context)),
-                                  textAlign:
-                                      TextAlign.center,
+                                  style: TextStyleCustom.outFitLight300(
+                                    fontSize: 15,
+                                    color: textLightGrey(context),
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
                               Padding(
-                                padding: const EdgeInsets
-                                    .symmetric(
-                                    vertical: 25.0),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 25.0,
+                                ),
                                 child: Row(
                                   mainAxisAlignment:
-                                      MainAxisAlignment
-                                          .spaceEvenly,
-                                  children: List.generate(
-                                      statItems.length,
-                                      (index) {
-                                    StatItem item =
-                                        statItems[index];
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: List.generate(statItems.length, (
+                                    index,
+                                  ) {
+                                    StatItem item = statItems[index];
                                     return Expanded(
                                       child: StatColumn(
                                         value: item.value,
                                         label: item.label,
                                         valueStyle:
-                                            TextStyleCustom
-                                                .unboundedSemiBold600(
-                                          color:
-                                              textDarkGrey(
-                                                  context),
-                                          fontSize: 16,
-                                        ),
-                                        labelStyle: TextStyleCustom
-                                            .outFitRegular400(
-                                                color: textLightGrey(
-                                                    context),
-                                                fontSize:
-                                                    15),
+                                            TextStyleCustom.unboundedSemiBold600(
+                                              color: textDarkGrey(context),
+                                              fontSize: 16,
+                                            ),
+                                        labelStyle:
+                                            TextStyleCustom.outFitRegular400(
+                                              color: textLightGrey(context),
+                                              fontSize: 15,
+                                            ),
                                       ),
                                     );
                                   }),
                                 ),
                               ),
                               if (widget.liveUser?.userId !=
-                                  SessionManager.instance
-                                      .getUserID())
+                                  SessionManager.instance.getUserID())
                                 Row(
                                   spacing: 10,
                                   children: [
                                     if (widget.isAudience)
                                       Expanded(
-                                        child:
-                                            TextButtonCustom(
+                                        child: TextButtonCustom(
                                           onTap: () {
                                             Get.back();
                                             Get.bottomSheet(
-                                                ConfirmationSheet(
-                                                    title: LKey
-                                                        .exitLiveStream
-                                                        .tr,
-                                                    description: LKey
-                                                        .ifYouCheckThisProfileEtc
-                                                        .tr,
-                                                    onTap:
-                                                        () {
-                                                      Get.back();
+                                              ConfirmationSheet(
+                                                title: LKey.exitLiveStream.tr,
+                                                description: LKey
+                                                    .ifYouCheckThisProfileEtc
+                                                    .tr,
+                                                onTap: () {
+                                                  Get.back();
 
-                                                      NavigationService
-                                                          .shared
-                                                          .openProfileScreen(user);
-                                                    }));
+                                                  NavigationService.shared
+                                                      .openProfileScreen(user);
+                                                },
+                                              ),
+                                            );
                                           },
-                                          title: LKey
-                                              .checkProfile
-                                              .tr,
-                                          titleColor:
-                                              textLightGrey(
-                                                  context),
-                                          backgroundColor:
-                                              bgMediumGrey(
-                                                  context),
-                                          horizontalMargin:
-                                              0,
+                                          title: LKey.checkProfile.tr,
+                                          titleColor: textLightGrey(context),
+                                          backgroundColor: bgMediumGrey(
+                                            context,
+                                          ),
+                                          horizontalMargin: 0,
                                           borderSide: BorderSide(
-                                              color: whitePure(
-                                                      context)
-                                                  .withValues(
-                                                      alpha:
-                                                          .3),
-                                              width: 1),
+                                            color: whitePure(
+                                              context,
+                                            ).withValues(alpha: .3),
+                                            width: 1,
+                                          ),
                                         ),
                                       ),
                                     Expanded(
-                                      child: isFollowUnFollowInProcess
-                                              .value
+                                      child: isFollowUnFollowInProcess.value
                                           ? const LoaderWidget()
                                           : TextButtonCustom(
-                                              onTap:
-                                                  followUnFollowUser,
+                                              onTap: followUnFollowUser,
                                               title: isFollow
-                                                  ? LKey
-                                                      .unFollow
-                                                      .tr
-                                                  : _getFollowButtonText(
-                                                      user),
+                                                  ? LKey.unFollow.tr
+                                                  : _getFollowButtonText(user),
                                               titleColor: isFollow
-                                                  ? textLightGrey(
-                                                      context)
-                                                  : whitePure(
-                                                      context),
+                                                  ? textLightGrey(context)
+                                                  : whitePure(context),
                                               backgroundColor: isFollow
-                                                  ? bgGrey(
-                                                      context)
-                                                  : blueFollow(
-                                                      context),
-                                              horizontalMargin:
-                                                  0,
+                                                  ? bgGrey(context)
+                                                  : blueFollow(context),
+                                              horizontalMargin: 0,
                                               borderSide: BorderSide(
-                                                  color: isFollow
-                                                      ? whitePure(context).withValues(
-                                                          alpha:
-                                                              .3)
-                                                      : whitePure(
-                                                          context),
-                                                  width:
-                                                      1)),
+                                                color: isFollow
+                                                    ? whitePure(
+                                                        context,
+                                                      ).withValues(alpha: .3)
+                                                    : whitePure(context),
+                                                width: 1,
+                                              ),
+                                            ),
                                     ),
                                   ],
                                 ),
                               const SizedBox(height: 10),
                               if (!widget.isAudience)
                                 Obx(() {
-                                  LivestreamUserState?
-                                      state = widget
-                                          .controller
-                                          .liveUsersStates
-                                          .firstWhere(
-                                    (element) {
-                                      return element
-                                              .userId ==
-                                          widget.liveUser
-                                              ?.userId;
-                                    },
-                                  );
+                                  LivestreamUserState? state = widget
+                                      .controller
+                                      .liveUsersStates
+                                      .firstWhere((element) {
+                                        return element.userId ==
+                                            widget.liveUser?.userId;
+                                      });
 
                                   return Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     spacing: 8,
                                     children: [
                                       LiveStreamCircleBorderButton(
                                         image: state.isMuted
-                                            ? AssetRes
-                                                .icMicOff
-                                            : AssetRes
-                                                .icMicrophone,
-                                        iconColor:
-                                            textLightGrey(
-                                                context),
-                                        borderColor:
-                                            bgGrey(context),
-                                        size: const Size(
-                                            40, 40),
-                                        onTap: () => widget
-                                            .controller
-                                            .coHostAudioToggle(
-                                                state),
+                                            ? AssetRes.icMicOff
+                                            : AssetRes.icMicrophone,
+                                        iconColor: textLightGrey(context),
+                                        borderColor: bgGrey(context),
+                                        size: const Size(40, 40),
+                                        onTap: () => widget.controller
+                                            .coHostAudioToggle(state),
                                       ),
                                       LiveStreamCircleBorderButton(
-                                        image: state
-                                                .isVideoOn
-                                            ? AssetRes
-                                                .icVideoCamera
-                                            : AssetRes
-                                                .icVideoOff,
-                                        iconColor:
-                                            textLightGrey(
-                                                context),
-                                        borderColor:
-                                            bgGrey(context),
-                                        size: const Size(
-                                            40, 40),
-                                        onTap: () => widget
-                                            .controller
-                                            .coHostVideoToggle(
-                                                state),
+                                        image: state.isVideoOn
+                                            ? AssetRes.icVideoCamera
+                                            : AssetRes.icVideoOff,
+                                        iconColor: textLightGrey(context),
+                                        borderColor: bgGrey(context),
+                                        size: const Size(40, 40),
+                                        onTap: () => widget.controller
+                                            .coHostVideoToggle(state),
                                       ),
                                       LiveStreamCircleBorderButton(
-                                        image: AssetRes
-                                            .icDelete1,
-                                        iconColor: ColorRes
-                                            .likeRed,
-                                        borderColor:
-                                            ColorRes
-                                                .likeRed,
-                                        size: const Size(
-                                            40, 40),
+                                        image: AssetRes.icDelete1,
+                                        iconColor: ColorRes.likeRed,
+                                        borderColor: ColorRes.likeRed,
+                                        size: const Size(40, 40),
                                         onTap: () {
                                           Get.back();
-                                          widget.controller
-                                              .coHostDelete(
-                                                  state);
+                                          widget.controller.coHostDelete(state);
                                         },
                                       ),
                                     ],
                                   );
-                                })
+                                }),
                             ],
                           ),
                         ),
                         const CustomBackButton(
-                            image: AssetRes.icClose,
-                            width: 23,
-                            height: 23,
-                            padding: EdgeInsets.all(10))
+                          image: AssetRes.icClose,
+                          width: 23,
+                          height: 23,
+                          padding: EdgeInsets.all(10),
+                        ),
                       ],
                     );
             }),
@@ -392,8 +336,7 @@ class _LiveStreamUserInfoSheetState
     if (user == null) return LKey.follow.tr;
 
     // If the user follows me (followStatus 2 or 3) but I'm not following them back
-    if ((user.followStatus == 2 ||
-            user.followStatus == 3) &&
+    if ((user.followStatus == 2 || user.followStatus == 3) &&
         !(user.isFollowing ?? false)) {
       return LKey.followBack.tr;
     }

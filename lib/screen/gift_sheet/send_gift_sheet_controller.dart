@@ -23,6 +23,7 @@ class SendGiftSheetController extends BaseController {
   List<AppUser> liveUsers;
   GiftType? giftType;
   late LivestreamScreenController livestreamController;
+  bool _isSendingGift = false;
 
   SendGiftSheetController(this.giftType, this.userId, this.liveUsers);
 
@@ -53,52 +54,81 @@ class SendGiftSheetController extends BaseController {
     myUser.value = SessionManager.instance.getUser();
   }
 
-  void onGiftTap(Gift gift, BuildContext context) {
+  Future<void> onGiftTap(Gift gift) async {
+    if (_isSendingGift) return;
+
     if (gift.id == null) {
       return showSnackBar('Gift Not Found');
     }
 
-    if ((gift.coinPrice ?? 0) >= (myUser.value?.coinWallet ?? 0)) {
+    final coinPrice = gift.coinPrice ?? 0;
+    if (coinPrice <= 0) {
+      return showSnackBar('This gift is not available right now.');
+    }
+
+    if (coinPrice > (myUser.value?.coinWallet ?? 0)) {
       return showSnackBar('Insufficient fund');
     }
 
-    sendGift(gift, context);
+    _isSendingGift = true;
+    try {
+      await sendGift(gift);
+    } finally {
+      _isSendingGift = false;
+    }
   }
 
-  Future<void> sendGift(Gift gift, BuildContext context) async {
+  Future<void> sendGift(Gift gift) async {
     final giftId = gift.id?.toInt() ?? -1;
 
     final coinPrice = gift.coinPrice ?? 0;
-    userId ??= livestreamController.selectedGiftUser.value?.userId;
+    final isLiveGift =
+        giftType == GiftType.livestream || giftType == GiftType.battle;
+    final recipientId = userId ??
+        (isLiveGift
+            ? livestreamController.selectedGiftUser.value?.userId
+            : null);
 
-    if (giftId == -1 || userId == -1) {
-      return Loggers.error('Invalid Gift: $giftId or User: $userId');
+    if (giftId == -1 || recipientId == null || recipientId < 0) {
+      showSnackBar('The gift recipient is no longer available.');
+      return Loggers.error('Invalid Gift: $giftId or User: $recipientId');
     }
 
     if (coinPrice <= 0) {
       return Loggers.error(
           'Invalid coin price: $coinPrice, skipping gift sending.');
     }
-    showLoader();
-    final response = await GiftWalletService.instance
-        .sendGift(giftId: giftId, userId: userId);
-    stopLoader();
-    if (response.status == true) {
-      // Deduct gift coins from user wallet
-      myUser.update((val) {
-        val?.removeCoinFromWallet(coinPrice);
-      });
-      Loggers.info(myUser.value?.coinWallet);
-      SessionManager.instance.setUser(myUser.value);
-      if (giftType == GiftType.none) {
-        Get.back(result: GiftManager(gift));
+    var loaderVisible = false;
+    try {
+      showLoader();
+      loaderVisible = true;
+      final response = await GiftWalletService.instance
+          .sendGift(giftId: giftId, userId: recipientId);
+      stopLoader();
+      loaderVisible = false;
+
+      if (response.status == true) {
+        // Deduct gift coins from user wallet
+        myUser.update((val) {
+          val?.removeCoinFromWallet(coinPrice);
+        });
+        Loggers.info(myUser.value?.coinWallet);
+        SessionManager.instance.setUser(myUser.value);
+        if (giftType == GiftType.none) {
+          Get.back(result: GiftManager(gift));
+        } else {
+          Get.back(
+              result: GiftManager(gift,
+                  streamUser: livestreamController.selectedGiftUser.value));
+        }
       } else {
-        Get.back(
-            result: GiftManager(gift,
-                streamUser: livestreamController.selectedGiftUser.value));
+        showSnackBar(response.message);
       }
-    } else {
-      showSnackBar(response.message);
+    } catch (e, stack) {
+      Loggers.error('Failed to send gift: $e\n$stack');
+      showSnackBar('Unable to send the gift. Please try again.');
+    } finally {
+      if (loaderVisible) stopLoader();
     }
   }
 }

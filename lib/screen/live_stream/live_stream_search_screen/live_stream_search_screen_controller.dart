@@ -17,34 +17,35 @@ import 'package:shortzz/screen/live_stream/livestream_screen/audience/live_strea
 import 'package:shortzz/screen/live_stream/livestream_screen/host/livestream_host_screen.dart';
 import 'package:shortzz/utilities/firebase_const.dart';
 
-class LiveStreamSearchScreenController
-    extends BaseController {
+class LiveStreamSearchScreenController extends BaseController {
   FirebaseFirestore db = FirebaseFirestore.instance;
   RxList<Livestream> livestreamList = <Livestream>[].obs;
-  RxList<Livestream> livestreamFilterList =
-      <Livestream>[].obs;
-  StreamSubscription<QuerySnapshot<Livestream>>?
-      livestreamListListener;
+  RxList<Livestream> livestreamFilterList = <Livestream>[].obs;
+  StreamSubscription<QuerySnapshot<Livestream>>? livestreamListListener;
+  Timer? staleRoomTimer;
+  final Map<String, Livestream> _livestreamMap = {};
 
-  final firebaseFirestoreController =
-      Get.find<FirebaseFirestoreController>();
+  final firebaseFirestoreController = Get.find<FirebaseFirestoreController>();
 
-  Setting? get setting =>
-      SessionManager.instance.getSettings();
+  Setting? get setting => SessionManager.instance.getSettings();
 
-  RxList<DummyLive> get dummyLives =>
-      (setting?.dummyLives ?? []).obs;
+  RxList<DummyLive> get dummyLives => (setting?.dummyLives ?? []).obs;
 
   @override
   void onReady() {
     super.onReady();
     Future.wait({fetchLiveStreams(), addDummyUsers()});
+    staleRoomTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _publishActiveStreams(),
+    );
   }
 
   @override
   void onClose() {
     super.onClose();
     livestreamListListener?.cancel();
+    staleRoomTimer?.cancel();
   }
 
   Future<void> fetchLiveStreams() async {
@@ -52,15 +53,12 @@ class LiveStreamSearchScreenController
     await Future.delayed(const Duration(milliseconds: 100));
 
     // Using a map for faster access and modification
-    final Map<String, Livestream> livestreamMap = {};
-
     livestreamListListener = db
         .collection(FirebaseConst.liveStreams)
         .withConverter(
           fromFirestore: (snapshot, options) =>
               Livestream.fromJson(snapshot.data()!),
-          toFirestore: (Livestream livestream, options) =>
-              livestream.toJson(),
+          toFirestore: (Livestream livestream, options) => livestream.toJson(),
         )
         .snapshots()
         .listen((snapshot) {
@@ -72,40 +70,47 @@ class LiveStreamSearchScreenController
         // Add, modify, or remove based on document change type
         switch (change.type) {
           case DocumentChangeType.added:
-            livestreamMap[roomId] = livestream;
+            _livestreamMap[roomId] = livestream;
             break;
 
           case DocumentChangeType.modified:
             // Update only if the livestream has changed
-            livestreamMap[roomId] = livestream;
+            _livestreamMap[roomId] = livestream;
             break;
 
           case DocumentChangeType.removed:
-            livestreamMap.remove(roomId);
+            _livestreamMap.remove(roomId);
             break;
         }
       }
 
       // Convert map back to lists
-      livestreamList.value =
-          List.from(livestreamMap.values);
-      livestreamFilterList.value =
-          List.from(livestreamMap.values);
-      livestreamFilterList.sort((a, b) =>
-          (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+      _publishActiveStreams();
       // // Perform any additional cleanup or transformations
       // removeDummyLive();
 
       _assignHostUsersToStreams();
 
-      isLoading.value =
-          false; // Hide loader after initial fetch
+      isLoading.value = false; // Hide loader after initial fetch
     });
   }
 
+  void _publishActiveStreams() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final active = _livestreamMap.values.where((stream) {
+      if (stream.isDummyLive == 1) return true;
+      final heartbeat = stream.lastHeartbeatAt ?? stream.createdAt;
+      return heartbeat == null || now - heartbeat <= 60000;
+    }).toList()
+      ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+
+    livestreamList.value = active;
+    livestreamFilterList.value = List<Livestream>.from(active);
+    _assignHostUsersToStreams();
+  }
+
   void _assignHostUsersToStreams() {
-    final userMap =
-        _userMapFromList(firebaseFirestoreController.users);
+    final userMap = _userMapFromList(firebaseFirestoreController.users);
     for (var stream in livestreamList) {
       stream.hostUser = userMap[stream.hostId];
     }
@@ -121,17 +126,14 @@ class LiveStreamSearchScreenController
   void onLiveUserTap(Livestream stream) async {
     User? myUser = SessionManager.instance.getUser();
     if (stream.hostId == myUser?.id) {
-      Get.to(() => LivestreamHostScreen(
-          isHost: true, livestream: stream));
+      Get.to(() => LivestreamHostScreen(isHost: true, livestream: stream));
     } else {
-      Get.to(() => LiveStreamAudienceScreen(
-          isHost: false, livestream: stream));
+      Get.to(() => LiveStreamAudienceScreen(isHost: false, livestream: stream));
     }
   }
 
   onSearchChange(String value) {
-    livestreamFilterList.value =
-        livestreamList.search(value, (p0) {
+    livestreamFilterList.value = livestreamList.search(value, (p0) {
       return p0.hostUser?.username ?? '';
     }, (p1) => p1.description ?? '');
   }
@@ -189,8 +191,7 @@ class LiveStreamSearchScreenController
     //   }
     // }
 
-    Future<void> createLiveStream(
-        DummyLive? dummyLive) async {
+    Future<void> createLiveStream(DummyLive? dummyLive) async {
       User? dummyUser = dummyLive?.user;
       if (dummyUser == null) {
         Loggers.error('Dummy User Not found');
@@ -198,9 +199,8 @@ class LiveStreamSearchScreenController
       }
       int userId = dummyLive?.userId ?? -1;
 
-      DocumentReference livestreamRef = db
-          .collection(FirebaseConst.liveStreams)
-          .doc('$userId');
+      DocumentReference livestreamRef =
+          db.collection(FirebaseConst.liveStreams).doc('$userId');
 
       int time = DateTime.now().millisecondsSinceEpoch;
 
@@ -217,17 +217,13 @@ class LiveStreamSearchScreenController
 
       // LivestreamUserState model
       LivestreamUserState livestreamUserState =
-          dummyUser.streamState(
-              time: time,
-              stateType: LivestreamUserType.host);
+          dummyUser.streamState(time: time, stateType: LivestreamUserType.host);
 
       try {
-        DocumentReference usersRef = db
-            .collection(FirebaseConst.appUsers)
-            .doc('$userId');
-        DocumentReference userStateRef = livestreamRef
-            .collection(FirebaseConst.userState)
-            .doc('$userId');
+        DocumentReference usersRef =
+            db.collection(FirebaseConst.appUsers).doc('$userId');
+        DocumentReference userStateRef =
+            livestreamRef.collection(FirebaseConst.userState).doc('$userId');
 
         WriteBatch batch = db.batch();
 
@@ -237,13 +233,11 @@ class LiveStreamSearchScreenController
         if (isExist) {
           // Update existing documents
           batch.update(livestreamRef, livestream.toJson());
-          batch.update(
-              userStateRef, livestreamUserState.toJson());
+          batch.update(userStateRef, livestreamUserState.toJson());
         } else {
           // Create new documents
           batch.set(livestreamRef, livestream.toJson());
-          batch.set(
-              userStateRef, livestreamUserState.toJson());
+          batch.set(userStateRef, livestreamUserState.toJson());
         }
         if (isUserExist) {
           batch.update(usersRef, livestreamUser.toJson());
@@ -252,25 +246,20 @@ class LiveStreamSearchScreenController
         }
 
         await batch.commit();
-        Loggers.success(isExist
-            ? 'Updated Dummy Live'
-            : 'Created Dummy Live');
+        Loggers.success(isExist ? 'Updated Dummy Live' : 'Created Dummy Live');
       } catch (e, stackTrace) {
-        Loggers.error(
-            'Failed to create/update live stream: $e');
+        Loggers.error('Failed to create/update live stream: $e');
         Loggers.error('StackTrace: $stackTrace');
       }
     }
 
-    Future<void> deleteStreamOnFirebase(
-        int? dummyUserId) async {
+    Future<void> deleteStreamOnFirebase(int? dummyUserId) async {
       if (dummyUserId == null) return;
 
       final String roomId = dummyUserId.toString();
 
-      final DocumentReference livestreamRef = db
-          .collection(FirebaseConst.liveStreams)
-          .doc(roomId);
+      final DocumentReference livestreamRef =
+          db.collection(FirebaseConst.liveStreams).doc(roomId);
 
       final CollectionReference usersStateRef =
           livestreamRef.collection(FirebaseConst.userState);
@@ -294,15 +283,13 @@ class LiveStreamSearchScreenController
         for (final doc in usersSnapshot.docs) {
           batch.delete(doc.reference);
         }
-        Loggers.info(
-            'Queued ${usersSnapshot.size} user state deletions.');
+        Loggers.info('Queued ${usersSnapshot.size} user state deletions.');
 
         // Queue deletions for comments
         for (final doc in commentsSnapshot.docs) {
           batch.delete(doc.reference);
         }
-        Loggers.info(
-            'Queued ${commentsSnapshot.size} comment deletions.');
+        Loggers.info('Queued ${commentsSnapshot.size} comment deletions.');
 
         // Delete the livestream document
         batch.delete(livestreamRef);
@@ -318,9 +305,8 @@ class LiveStreamSearchScreenController
     }
 
     void removeDummyLive() {
-      final dummyStream = livestreamFilterList
-          .where((e) => e.isDummyLive == 1)
-          .toList();
+      final dummyStream =
+          livestreamFilterList.where((e) => e.isDummyLive == 1).toList();
       if (dummyStream.isEmpty) return;
       if (setting?.liveDummyShow == 0) {
         for (var element in dummyStream) {
@@ -329,8 +315,7 @@ class LiveStreamSearchScreenController
       } else {
         for (var element in dummyStream) {
           final shouldDelete = dummyLives.isEmpty ||
-              !dummyLives
-                  .any((e) => e.userId == element.hostId);
+              !dummyLives.any((e) => e.userId == element.hostId);
 
           if (shouldDelete) {
             deleteStreamOnFirebase(element.hostId);

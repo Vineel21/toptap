@@ -4,20 +4,19 @@ import 'package:shortzz/common/manager/logger.dart';
 import 'package:shortzz/common/manager/session_manager.dart';
 import 'package:shortzz/common/service/api/notification_service.dart';
 import 'package:shortzz/common/service/api/user_service.dart';
+import 'package:shortzz/common/service/call_signaling_service.dart';
 import 'package:shortzz/common/manager/firebase_notification_manager.dart';
 
 /// Enhanced Call Manager with error handling and state management
 class CallManager extends GetxController {
-  static final CallManager _instance =
-      CallManager._internal();
+  static final CallManager _instance = CallManager._internal();
   factory CallManager() => _instance;
   CallManager._internal() {
     _ensureInitialized();
   }
 
   // Observable states
-  final RxBool isInitialized =
-      false.obs;
+  final RxBool isInitialized = false.obs;
   final RxBool isInCall = false.obs;
   final RxString callStatus = 'ready'.obs;
   final RxString errorMessage = ''.obs;
@@ -39,19 +38,16 @@ class CallManager extends GetxController {
       // Validate Agora App ID
       if (AgoraConfig.appId == "YOUR_AGORA_APP_ID" ||
           AgoraConfig.appId.isEmpty) {
-        throw Exception(
-            'Please configure your Agora App ID in AgoraConfig');
+        throw Exception('Please configure your Agora App ID in AgoraConfig');
       }
 
       isInitialized.value = true;
       callStatus.value = 'ready';
-      Loggers.success(
-          'Call Manager initialized successfully');
+      Loggers.success('Call Manager initialized successfully');
     } catch (e) {
       errorMessage.value = e.toString();
       callStatus.value = 'error';
-      Loggers.error(
-          'Call Manager initialization failed: $e');
+      Loggers.error('Call Manager initialization failed: $e');
     }
   }
 
@@ -75,37 +71,42 @@ class CallManager extends GetxController {
       Loggers.info('📞 Starting voice call: User $userId1 → User $userId2');
 
       final String finalChannelId = channelId ??
-          AgoraConfig.generateChannelId(userId1, userId2,
-              prefix: 'voice');
+          AgoraConfig.generateChannelId(userId1, userId2, prefix: 'voice');
       final String? providedToken = token?.trim();
       final String? callerToken =
-          (providedToken?.isNotEmpty ?? false)
-              ? providedToken
-              : null;
+          (providedToken?.isNotEmpty ?? false) ? providedToken : null;
+
+      await CallSignalingService.instance.createCall(
+        callId: finalChannelId,
+        callerId: userId1,
+        calleeId: userId2,
+        isVideo: false,
+      );
 
       // For now, simulate success and optionally push incoming-call notification
-      await Future.delayed(
-          const Duration(milliseconds: 300));
-      
+      await Future.delayed(const Duration(milliseconds: 300));
+
       Loggers.info('📞 Sending voice call notification to user: $userId2');
       final bool pushSent = await _sendIncomingCallPush(
         isVideo: false,
         channelId: finalChannelId,
-        token:
-            shareTokenWithCallee ? callerToken : null,
+        token: shareTokenWithCallee ? callerToken : null,
         calleeId: userId2,
       );
       if (!pushSent) {
+        await CallSignalingService.instance.updateStatus(
+          finalChannelId,
+          CallSignalStatus.failed,
+          reason: 'notification_failed',
+        );
         callStatus.value = 'error';
-        errorMessage.value =
-            'Failed to notify callee about voice call';
+        errorMessage.value = 'Failed to notify callee about voice call';
         return false;
       }
 
       isInCall.value = true;
       callStatus.value = 'connected';
-      Loggers.success(
-          '📞 Voice call started successfully: $finalChannelId');
+      Loggers.success('📞 Voice call started successfully: $finalChannelId');
       return true;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -135,37 +136,42 @@ class CallManager extends GetxController {
       Loggers.info('📹 Starting video call: User $userId1 → User $userId2');
 
       final String finalChannelId = channelId ??
-          AgoraConfig.generateChannelId(userId1, userId2,
-              prefix: 'video');
+          AgoraConfig.generateChannelId(userId1, userId2, prefix: 'video');
       final String? providedToken = token?.trim();
       final String? callerToken =
-          (providedToken?.isNotEmpty ?? false)
-              ? providedToken
-              : null;
+          (providedToken?.isNotEmpty ?? false) ? providedToken : null;
+
+      await CallSignalingService.instance.createCall(
+        callId: finalChannelId,
+        callerId: userId1,
+        calleeId: userId2,
+        isVideo: true,
+      );
 
       // For now, simulate success and optionally push incoming-call notification
-      await Future.delayed(
-          const Duration(milliseconds: 300));
-      
+      await Future.delayed(const Duration(milliseconds: 300));
+
       Loggers.info('📹 Sending video call notification to user: $userId2');
       final bool pushSent = await _sendIncomingCallPush(
         isVideo: true,
         channelId: finalChannelId,
-        token:
-            shareTokenWithCallee ? callerToken : null,
+        token: shareTokenWithCallee ? callerToken : null,
         calleeId: userId2,
       );
       if (!pushSent) {
+        await CallSignalingService.instance.updateStatus(
+          finalChannelId,
+          CallSignalStatus.failed,
+          reason: 'notification_failed',
+        );
         callStatus.value = 'error';
-        errorMessage.value =
-            'Failed to notify callee about video call';
+        errorMessage.value = 'Failed to notify callee about video call';
         return false;
       }
 
       isInCall.value = true;
       callStatus.value = 'connected';
-      Loggers.success(
-          '📹 Video call started successfully: $finalChannelId');
+      Loggers.success('📹 Video call started successfully: $finalChannelId');
       return true;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -183,24 +189,26 @@ class CallManager extends GetxController {
     required int calleeId,
   }) async {
     try {
-      Loggers.info('📞 Preparing to send ${isVideo ? 'video' : 'voice'} call notification...');
-      
+      Loggers.info(
+          '📞 Preparing to send ${isVideo ? 'video' : 'voice'} call notification...');
+
       UserService? userService;
       try {
         userService = Get.find<UserService>();
       } catch (_) {
         userService = UserService.instance;
       }
-      
+
       Loggers.info('📞 Fetching callee details for user: $calleeId');
       final callee = await userService.fetchUserDetails(userId: calleeId);
-      
+
       if (callee?.deviceToken == null || (callee!.deviceToken ?? '').isEmpty) {
         Loggers.error('📞 ❌ Callee device token is empty or null');
         return false;
       }
 
-      Loggers.info('📞 ✅ Callee device token found: ${callee.deviceToken?.substring(0, 20)}...');
+      Loggers.info(
+          '📞 ✅ Callee device token found: ${callee.deviceToken?.substring(0, 20)}...');
 
       final me = SessionManager.instance.getUser();
       if (me == null) {
@@ -230,8 +238,7 @@ class CallManager extends GetxController {
         deviceType: callee.device,
       );
       if (!pushSuccess) {
-        Loggers.error(
-            '📞 ❌ Push API reported failure for call notification');
+        Loggers.error('📞 ❌ Push API reported failure for call notification');
         return false;
       }
 

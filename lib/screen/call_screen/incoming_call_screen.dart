@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:shortzz/common/config/agora_config.dart';
 import 'package:shortzz/common/extensions/string_extension.dart';
 import 'package:shortzz/common/manager/call_state_manager.dart';
+import 'package:shortzz/common/service/call_signaling_service.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/screen/call_screen/call_screen.dart';
 
@@ -114,6 +115,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   Future<void> _acceptCall() async {
     if (widget.callId?.isNotEmpty ?? false) {
       await CallStateManager.instance.acceptCall(widget.callId!);
+      await CallSignalingService.instance.updateStatus(
+        widget.callId!,
+        CallSignalStatus.accepted,
+      );
     }
     final effectiveChannel = AgoraConfig.effectiveChannelId(widget.channelId);
 
@@ -122,6 +127,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
           user: widget.caller,
           isVideoCall: widget.isVideoCall,
           channelId: effectiveChannel,
+          callId: widget.callId ?? widget.channelId,
           token: widget.token,
         ));
   }
@@ -130,6 +136,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     if (widget.callId?.isNotEmpty ?? false) {
       await CallStateManager.instance.declineCall(
         widget.callId!,
+        reason: 'user_declined',
+      );
+      await CallSignalingService.instance.updateStatus(
+        widget.callId!,
+        CallSignalStatus.declined,
         reason: 'user_declined',
       );
     }

@@ -13,30 +13,35 @@ class LivestreamUserState {
   int joinStreamTime;
   AppUser? user;
 
-  LivestreamUserState(
-      {required this.isMuted,
-      required this.isVideoOn,
-      required this.type,
-      required this.userId,
-      required this.liveCoin,
-      required this.currentBattleCoin,
-      required this.totalBattleCoin,
-      required this.followersGained,
-      required this.joinStreamTime,
-      this.user});
+  LivestreamUserState({
+    required this.isMuted,
+    required this.isVideoOn,
+    required this.type,
+    required this.userId,
+    required this.liveCoin,
+    required this.currentBattleCoin,
+    required this.totalBattleCoin,
+    required this.followersGained,
+    required this.joinStreamTime,
+    this.user,
+  });
 
   factory LivestreamUserState.fromJson(Map<String, dynamic> json) {
     return LivestreamUserState(
-        isMuted: json['is_muted'] ?? false,
-        isVideoOn: json['is_video_on'] ?? true,
-        type: LivestreamUserType.fromString(json['type'] ?? ''),
-        userId: json['user_id'] ?? 0,
-        liveCoin: json['live_coin'] ?? 0,
-        currentBattleCoin: json['current_battle_coin'] ?? 0,
-        totalBattleCoin: json['total_battle_coin'] ?? 0,
-        followersGained: json['followers_gained'].cast<int>() ?? [],
-        joinStreamTime: json['join_stream_time'] ?? 0,
-        user: json['user'] != null ? AppUser.fromJson(json['user']) : null);
+      isMuted: json['is_muted'] ?? false,
+      isVideoOn: json['is_video_on'] ?? true,
+      type: LivestreamUserType.fromString(json['type'] ?? ''),
+      userId: json['user_id'] ?? 0,
+      liveCoin: json['live_coin'] ?? 0,
+      currentBattleCoin: json['current_battle_coin'] ?? 0,
+      totalBattleCoin: json['total_battle_coin'] ?? 0,
+      followersGained: (json['followers_gained'] as List<dynamic>? ?? [])
+          .whereType<num>()
+          .map((value) => value.toInt())
+          .toList(),
+      joinStreamTime: json['join_stream_time'] ?? 0,
+      user: json['user'] != null ? AppUser.fromJson(json['user']) : null,
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -50,7 +55,7 @@ class LivestreamUserState {
       'total_battle_coin': totalBattleCoin,
       'followers_gained': followersGained,
       'join_stream_time': joinStreamTime,
-      if (user != null) 'user': user?.toJson()
+      if (user != null) 'user': user?.toJson(),
     };
   }
 

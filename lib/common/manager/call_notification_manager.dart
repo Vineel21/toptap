@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:shortzz/common/manager/call_state_manager.dart';
 import 'package:shortzz/common/manager/logger.dart';
+import 'package:shortzz/common/service/call_signaling_service.dart';
 import 'package:shortzz/model/user_model/user_model.dart';
 import 'package:shortzz/screen/call_screen/enhanced_incoming_call_screen.dart';
 import 'package:shortzz/screen/call_screen/call_screen.dart';
@@ -348,6 +349,10 @@ class CallNotificationManager {
 
       // Update call state
       await CallStateManager.instance.acceptCall(callId);
+      await CallSignalingService.instance.updateStatus(
+        callId,
+        CallSignalStatus.accepted,
+      );
 
       // Stop ringtone and cleanup
       await _stopRingtone();
@@ -377,6 +382,13 @@ class CallNotificationManager {
 
       // Update call state
       await CallStateManager.instance.declineCall(callId, reason: reason);
+      await CallSignalingService.instance.updateStatus(
+        callId,
+        reason == 'timeout'
+            ? CallSignalStatus.missed
+            : CallSignalStatus.declined,
+        reason: reason,
+      );
 
       // Stop ringtone and cleanup
       await _stopRingtone();
@@ -399,6 +411,7 @@ class CallNotificationManager {
             user: callData.caller,
             isVideoCall: callData.isVideoCall,
             channelId: callData.channelId,
+            callId: callData.callId,
             token: callData.token,
           ));
     } catch (e) {
